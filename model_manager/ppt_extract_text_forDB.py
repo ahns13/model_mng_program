@@ -41,8 +41,13 @@ career_map = {
 positions = ["사원", "주임", "대리", "과장", "차장", "부장", "이사", "팀장", "실장", "본부장", "상무", "전무", "부사장", "사장", "파트장", "사업부장"]
 
 
+class GetOutLoop(Exception):
+    pass
+
+
 class Model:
     def __init__(self):
+        self.file_excuted = False
         self.model_profile = {
             "name": "",
             "real_name": "",
@@ -52,10 +57,11 @@ class Model:
             "sizeTop": "",
             "sizePants": "",
             "sizeShoe": "",
+            "sizeOther": "",
             "hobbyNspec": [],
-            "insta_id": "",
             "tel": "",
             "email": "",
+            "insta_id": "",
             "data_date": ""
         }
 
@@ -170,6 +176,8 @@ def shape_exec(cls_model, p_shape):
                 check_val = file_insert_check(cls_model)
                 if check_val == "e":
                     print("현 파일은 작업된 파일입니다.")
+                    cls_model.file_excuted = True
+                    break
                 elif check_val == "c":
                     print("파일명은 다르나 이름이 존재합니다. 확인하세요.")
                     inbox.destroy()
@@ -364,37 +372,54 @@ def shape_exec(cls_model, p_shape):
                     cls_model.model_contract_info.append([content_ext, data_ins_date(row_text)])
 
 
-def ppt_file_exec(vFIlePath):
-    prs = Presentation(vFIlePath)
-    print(vFIlePath)
+def ppt_file_exec(vFilePath):
+    prs = Presentation(vFilePath)
+    print(vFilePath)
     model = Model()
-    model.model_profile["model_gubun"] = os.path.basename(os.path.dirname(vFIlePath))
-    model.model_profile["model_dir_route"] = os.path.dirname(vFIlePath).replace(access_root, "")
-    model.model_profile["file_name"] = os.path.basename(vFIlePath)
-    model.model_profile["file_path"] = vFIlePath
-    for slide in prs.slides:
-        for shape in slide.shapes:
-            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
-                for g_idx, g_shape in enumerate(shape.shapes):
-                    if g_shape.left < 200000 and g_shape.height > 300000:  # Profile shape와 빈 shape 제외
-                        if hasattr(g_shape, "text"):
-                            shape_exec(model, g_shape)
-            elif shape.has_text_frame:
-                if shape.left < 200000 and shape.height > 300000:
-                    shape_exec(model, shape)
+    model.model_file_info["model_gubun"] = os.path.basename(os.path.dirname(vFilePath))
+    model.model_file_info["model_dir_route"] = os.path.dirname(vFilePath).replace(access_root, "")
+    model.model_file_info["file_name"] = os.path.basename(vFilePath)
+    model.model_file_info["file_path"] = vFilePath
+    try:
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                    for g_idx, g_shape in enumerate(shape.shapes):
+                        if g_shape.left < 200000 and g_shape.height > 300000:  # Profile shape와 빈 shape 제외
+                            if hasattr(g_shape, "text"):
+                                shape_exec(model, g_shape)
+                                if model.file_excuted:
+                                    raise GetOutLoop
+                elif shape.has_text_frame:
+                    if shape.left < 200000 and shape.height > 300000:
+                        shape_exec(model, shape)
+    except GetOutLoop:
+        model.model_career["type"] = ""
+        return
+
     model.model_career["type"] = ""
     print(model.model_profile)
     print(model.model_career)
     print(model.model_contact)
     print(model.model_contract_amt)
     print(model.model_contract_info)
+    print(model.model_file_info)
 
-    key_value = model_profile_ins(model)  # insert model_profile
-    hoobynspec_ins(model, key_value)  # insert hobbynspec
-    career_ins(model, key_value)  # insert career
-    contact_ins(model, key_value)  # insert contact
-    contract_amount_ins(model, key_value)  # insert contract
-    contract_info_ins(model, key_value)  # insert contract_info
+    key_value = get_key()
+    commit_status = []
+    commit_status.append(model_profile_ins(model, key_value))  # insert model_profile
+    commit_status.append(hoobynspec_ins(model, key_value))  # insert hobbynspec
+    commit_status.append(career_ins(model, key_value))  # insert career
+    commit_status.append(contact_ins(model, key_value))  # insert contact
+    commit_status.append(contract_amount_ins(model, key_value))  # insert contract
+    commit_status.append(contract_info_ins(model, key_value))  # insert contract_info
+    commit_status.append(file_info_ins(model, key_value))  # insert file_info
+    if commit_status:
+        conn.commit()
+    else:
+        db_cancel()
+        inbox.destroy()
+        sys.exit()
 
 
 def ppt_data_exec(vType):
@@ -403,15 +428,17 @@ def ppt_data_exec(vType):
         while ppt_file is None:
             ppt_file = filedialog.askopenfilename(initialdir=access_root, filetypes=[("ppt files", "*.pptx;*.ppt")])
         ppt_file_exec(ppt_file)
+        db_close
         inbox.destroy()
     else:
         ppt_folder = None
         while ppt_folder is None:
             ppt_folder = filedialog.askdirectory(initialdir=access_root)
 
-        for file in os.scandir(ppt_folder):
-            if file.is_file() and (file.endswith(".ppt") or file.endswith(".pptx")):
+        for file in sorted(os.scandir(ppt_folder), key=lambda x: x.name):
+            if file.is_file() and (file.name.endswith(".ppt") or file.name.endswith(".pptx")):
                 ppt_file_exec(file.path)
+        db_close
         inbox.destroy()
 
 
