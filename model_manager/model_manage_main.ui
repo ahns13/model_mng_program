@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>995</width>
-    <height>666</height>
+    <width>959</width>
+    <height>669</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>150</y>
-      <width>981</width>
+      <y>140</y>
+      <width>921</width>
       <height>421</height>
      </rect>
     </property>
@@ -101,7 +101,7 @@
      <string>조회</string>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -161,8 +161,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>995</width>
-     <height>26</height>
+     <width>959</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
