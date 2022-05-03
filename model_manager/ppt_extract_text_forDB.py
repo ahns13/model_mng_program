@@ -238,6 +238,11 @@ def shape_exec(cls_model, p_shape):
                 cls_model.model_profile["sizePants"] = m_num
                 data_ins_check = True
 
+            re_size = re.search(re.compile("[0-9]{2}-[0-9]{2}-[0-9]{2}"), row_text.replace(" ", ""))
+            if re_size is not None:
+                cls_model.model_profile["sizeOther"] = re_size.group()
+                data_ins_check = True
+
             if not data_ins_check:
                 cls_model.model_profile["hobbyNspec"].extend(list(filter(None, row_text.replace(" ", "").split(","))))
         elif shape_type == "B":
@@ -453,4 +458,3 @@ inbox.lift()
 inbox.focus_force()
 # inbox.attributes("-topmost", True)
 inbox.mainloop()
-
