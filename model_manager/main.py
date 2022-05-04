@@ -4,7 +4,7 @@ from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
-from model_sql_ui import *
+# from model_sql_ui import *
 
 form_class = uic.loadUiType("./model_manage_main.ui")[0]
 
@@ -31,30 +31,37 @@ class MainWindow(QMainWindow, form_class):
     def getDefaultTableData(self):
         self.searchName = self.lineEdit.text()
         self.tableWidget.removeRow(0)
-        # model_data = [[1,2,3,4,5,6], [1,2,3,4,5,6], [1,2,3,4,5,6]]
-        model_data = get_model_list(self.tablePageNo, self.searchName)
+        model_data = [[1,2,3,4,5,6], [1,2,3,4,5,6], [1,2,3,4,5,6]]
+        # model_data = get_model_list(self.tablePageNo, self.searchName)
         self.modelDataLen = len(model_data)
+        self.comboBox.clear()
+        self.comboBox.addItems([str(x) for x in range(1, 1+self.modelDataLen)])
+        self.comboBox.activated.connect(lambda: self.tablePaging(self.comboBox.currentText()))
         if self.modelDataLen:
             self.modelDataUpdate(model_data)
         else:
             self.noSearchMsg()
 
-    def tablePaging(self, v_btn_type):
+    def tablePaging(self, v_btn_type, v_page_no=0):
         if v_btn_type == "next":
             if self.tablePageNo == self.modelDataLen:
                 QMessageBox.about(self, "알림", "현재 페이지가 마지막 페이지입니다.")
                 return
             else:
                 self.tablePageNo += 1
-        else:
+                self.comboBox.setCurrentIndex(self.tablePageNo-1)
+        elif v_btn_type == "prev":
             if self.tablePageNo == 1:
                 QMessageBox.about(self, "알림", "현재 페이지가 처음 페이지입니다.")
                 return
             else:
                 self.tablePageNo -= 1
+                self.comboBox.setCurrentIndex(self.tablePageNo-1)
+        elif v_page_no is not None:
+            self.tablePageNo = int(v_page_no)
 
-        # model_data = [[10,20,30,40,50,60], [99,88,77,66,55,44], [7,6,5,4,3,2]]
-        model_data = get_model_list(self.tablePageNo)
+        model_data = [[10,20,30,40,50,60], [99,88,77,66,55,44], [7,6,5,4,3,2]]
+        # model_data = get_model_list(self.tablePageNo)
         self.modelDataUpdate(model_data)
 
     def modelDataUpdate(self, v_model_data):
