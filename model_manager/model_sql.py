@@ -26,37 +26,108 @@ def db_cancel():
     conn.close()
 
 
-def file_insert_check(v_cls_model):
-    check_sql = ("SELECT A.NAME, B.FILE_NAME FROM MODEL_PROFILE A, MODEL_INFO B\n"
-                 " WHERE A.KEY = B.KEY"
-                 "   AND A.NAME = '" + v_cls_model.model_profile["name"] + "'")
-    cursor.execute(check_sql)
-    result = cursor.fetchall()
-    if len(result):
-        for r_data in result:
-            if r_data[1] == v_cls_model.model_file_info["file_name"]:
-                return "e"  # data 존재함
-            elif r_data[1] != v_cls_model.model_file_info["file_name"]:
-                return "c"  # 파일 체크 필요 > 중단
-    else:
-        return "x"  # data 없음
+def sql_execute(v_exec_many, v_sql, v_ins_data=None):
+    try:
+        if v_exec_many:
+            cursor.executemany(v_sql, v_ins_data)
+        elif v_ins_data:
+            cursor.execute(v_sql, v_ins_data)
+        else:
+            cursor.execute(v_sql)
+        return True
+    except cx_Oracle.DatabaseError as e:
+        error, = e.args
+        print(v_sql)
+        print("error code : " + str(error.code))
+        print(error.message)
+        print(error.context)
+        db_cancel()
+        sys.exit()
+
+
+def get_file_list(v_dir_route):
+    sql = ("SELECT A.KEY, A.NAME||A.BIRTH_DATE AS NAME_BIRTH, B.FILE_NAME, A.TEL, A.INSTA_ID\n"
+           "  FROM MODEL_PROFILE A, MODEL_INFO B\n"
+           " WHERE A.KEY = B.KEY\n"
+           "   AND B.DIR_ROUTE = '" + v_dir_route + "'")
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        file_list = {"key": [], "nameBirth": [], "fileName": [], "instaId": [], "tel": []}
+        for r in result:
+            file_list["key"].append(r[0])
+            file_list["nameBirth"].append(r[1] if r[1] else "")
+            file_list["fileName"].append(r[2])
+            file_list["tel"].append(r[3] if r[3] else "")
+            file_list["instaId"].append(r[4] if r[4] else "")
+        return file_list
+    except cx_Oracle.DatabaseError as e:
+        error, = e.args
+        print(sql)
+        print("error code : " + str(error.code))
+        print(error.message)
+        print(error.context)
+        db_cancel()
+        sys.exit()
+
+
+def dup_ins_check(v_cls_model):
+    sql = ("SELECT NAME, FILE_NAME"
+           "  FROM MODEL_DUP_CHECK\n"
+           " WHERE FILE_NAME = '" + v_cls_model.model_file_info["file_name"] + "'")
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        file_list = {"name": [], "fileName": []}
+        for r in result:
+            file_list["name"].append(r[0])
+            file_list["fileName"].append(r[1])
+        return file_list
+    except cx_Oracle.DatabaseError as e:
+        error, = e.args
+        print(sql)
+        print("error code : " + str(error.code))
+        print(error.message)
+        print(error.context)
+        db_cancel()
+        sys.exit()
 
 
 def get_key():
-    check_sql = "SELECT NVL(MAX(KEY)+1,1) FROM MODEL_PROFILE"
-    cursor.execute(check_sql)
+    sql = "SELECT NVL(MAX(KEY)+1,1) FROM MODEL_PROFILE"
+    cursor.execute(sql)
     return cursor.fetchall()[0][0]
+
+
+def get_max_data(v_current_dir_route):
+    sql = "SELECT FILE_NAME FROM MODEL_INFO\n" \
+          " WHERE DIR_ROUTE = '" + v_current_dir_route + "'\n" \
+          "   AND KEY = (SELECT MAX(KEY) FROM MODEL_INFO WHERE DIR_ROUTE = '" + v_current_dir_route + "')"
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        return result[0][0] if len(result) else ""
+    except cx_Oracle.DatabaseError as e:
+        error, = e.args
+        print(sql)
+        print("error code : " + str(error.code))
+        print(error.message)
+        print(error.context)
+        db_cancel()
+        sys.exit()
 
 
 # model_profile insert
 def model_profile_ins(v_cls_model, v_key_value):
-    sql = "INSERT INTO MODEL_PROFILE(KEY,NAME,REAL_NAME,BIRTH_DATE,HEIGHT,WEIGHT,SIZE_TOP,SIZE_PANTS,SIZE_SHOE,SIZE_OTHER," \
-          "TEL,EMAIL,INSTA_ID,DATA_DATE,INSERT_DATE,INSERT_EMP,UPDATE_DATE,UPDATE_EMP) " \
-          "VALUES(" + str(v_key_value) + ", " + get_bind_cols(12) + " SYSDATE, 'admin', SYSDATE, 'admin')"
+    sql = "INSERT INTO MODEL_PROFILE(KEY,NAME,REAL_NAME,MODEL_DESC,BIRTH_DATE,HEIGHT,WEIGHT,\n" \
+          "SIZE_TOP,SIZE_PANTS,SIZE_SHOE,SIZE_OTHER,\n" \
+          "TEL,EMAIL,INSTA_ID,DATA_DATE,INSERT_DATE,INSERT_EMP,UPDATE_DATE,UPDATE_EMP) \n" \
+          "VALUES(" + str(v_key_value) + ", " + get_bind_cols(14) + " SYSDATE, 'admin', SYSDATE, 'admin')"
 
     ins_data = [
         v_cls_model.model_profile["name"],
         v_cls_model.model_profile["real_name"],
+        v_cls_model.model_profile["model_desc"],
         v_cls_model.model_profile["birthYear"],
         v_cls_model.model_profile["height"],
         v_cls_model.model_profile["weight"],
@@ -69,17 +140,7 @@ def model_profile_ins(v_cls_model, v_key_value):
         v_cls_model.model_profile["insta_id"],
         v_cls_model.model_profile["data_date"]
     ]
-    try:
-        cursor.execute(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(False, sql, ins_data)
 
 
 # hoobynspec insert
@@ -88,17 +149,7 @@ def hoobynspec_ins(v_cls_model, v_key_value):
           str(v_key_value) + ", " + get_bind_cols(2) + " SYSDATE, 'admin', SYSDATE, 'admin')"
 
     ins_data = [[idx+1, data] for idx, data in enumerate(v_cls_model.model_profile["hobbyNspec"])]
-    try:
-        cursor.executemany(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(True, sql, ins_data)
 
 
 # career insert
@@ -114,17 +165,7 @@ def career_ins(v_cls_model, v_key_value):
                 for c_idx, c_data in enumerate(model_data[key][type_key]):
                     ins_data.append([key, type_key, c_idx+1, c_data])
 
-    try:
-        cursor.executemany(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(True, sql, ins_data)
 
 
 # contact insert
@@ -137,48 +178,30 @@ def contact_ins(v_cls_model, v_key_value):
     for idx, data in enumerate(model_data):
         ins_data.append([idx, data[0], data[1], data[2], data[3], data[4], data[5], data[6]])
 
-    try:
-        cursor.executemany(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(True, sql, ins_data)
 
 
 # contract_amount insert
 def contract_amount_ins(v_cls_model, v_key_value):
     sql = "INSERT INTO CNTR_AMOUNT(KEY, TYPE, C_MONTH, AMOUNT, DATA_DATE, AP, " + \
           "INSERT_DATE, INSERT_EMP, UPDATE_DATE, UPDATE_EMP) VALUES(" + \
-          str(v_key_value) + ", " + get_bind_cols(4) + " SYSDATE, 'admin', SYSDATE, 'admin')"
+          str(v_key_value) + ", " + get_bind_cols(5) + " SYSDATE, 'admin', SYSDATE, 'admin')"
 
-    ins_data = []
+    ins_data, row_data = [], []
     model_data = v_cls_model.model_contract_amt
     for key in model_data.keys():
         amount_data = model_data[key]
         for type_key in amount_data.keys():
             if type_key == "amount":
                 for amt in amount_data[type_key]:
-                    ins_data.append([key, amt[0], amt[1], amt[2]])  # month별 금액
+                    row_data.append([key, amt[0], amt[1], amt[2]])  # month별 금액
             else:
-                for el in ins_data:
+                for el in row_data:
                     el.append(amount_data[type_key])  # AP
+        ins_data.extend(row_data)
+        row_data = []
 
-    try:
-        cursor.executemany(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(True, sql, ins_data)
 
 
 # contract_info insert
@@ -191,17 +214,7 @@ def contract_info_ins(v_cls_model, v_key_value):
     for idx, data in enumerate(model_data):
         ins_data.append([idx, data[0], data[1]])
 
-    try:
-        cursor.executemany(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(True, sql, ins_data)
 
 
 # file_info insert
@@ -213,16 +226,17 @@ def file_info_ins(v_cls_model, v_key_value):
     ins_data = [model_data["model_gubun"],
                 model_data["model_dir_route"],
                 model_data["file_name"],
-                model_data["file_path"]]
+                model_data["folder_path"]]
 
-    try:
-        cursor.execute(sql, ins_data)
-        return True
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        db_cancel()
-        sys.exit()
+    sql_execute(False, sql, ins_data)
+
+
+def model_dup_ins(v_cls_model):
+    sql = ("INSERT INTO MODEL_DUP_CHECK VALUES("
+           + str(v_cls_model.file_dup_bf_key) + ", '" + v_cls_model.model_profile["name"] + "', "
+           + "(SELECT NVL(MAX(NO),0) FROM MODEL_DUP_CHECK WHERE DUP_KEY = " + str(v_cls_model.file_dup_bf_key) + ")+1, "
+           "'" + v_cls_model.model_file_info["file_name"] + "', "
+           "'" + v_cls_model.model_file_info["folder_path"] + "', SYSDATE)")
+
+    sql_execute(False, sql)
+

@@ -14,6 +14,7 @@ re_s = re.compile("[0-9]+")
 re_tel_text = "[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}"  # 전화번호
 re_name_text = r"([가-힣]+[a-z|A-Z|\s|\(|\)|:]*)+"
 re_name_only = r"[가-힣|a-z|A-Z|\s]+"
+re_name_desc = r"\([\w+(+|_|-|,)*\s*\w+]*\)$"
 re_cont_name_n_tel = re.compile("(?:"+re_name_text+r"\s*)+"+re_tel_text)
 re_cont_tel = re.compile(re_tel_text)
 re_cont_date = re.compile(r"\(\d{6}\)")  # (등록일자(6))
@@ -38,19 +39,24 @@ career_map = {
     "활동": "활동", "경력": "활동", "기타": "기타"
 }
 
-positions = ["사원", "주임", "대리", "과장", "차장", "부장", "이사", "팀장", "실장", "본부장", "상무", "전무", "부사장", "사장", "파트장", "사업부장"]
+positions = ["사원", "주임", "대리", "과장", "차장", "본부장", "부장", "이사", "팀장", "실장", "상무", "전무", "부사장", "사장", "대표", "파트장", "사업부장"]
+folder_file_data = {}
 
 
 class GetOutLoop(Exception):
     pass
 
+class DupCheck(Exception):
+    pass
 
 class Model:
     def __init__(self):
         self.file_excuted = False
+        self.file_dup_bf_key = None
         self.model_profile = {
             "name": "",
             "real_name": "",
+            "model_desc": "",
             "birthYear": "",
             "height": "",
             "weight": "",
@@ -96,7 +102,7 @@ class Model:
             "model_gubun": "",
             "model_dir_route": "",
             "file_name": "",
-            "file_path": ""
+            "folder_path": ""
         }
 
     def career_divider(self, vGubun_name, vInput_list):
@@ -116,13 +122,33 @@ class Model:
                 else:
                     self.model_career[self.model_career["type"]][vGubun_name] = [cont]
 
+    def file_exist_check(self, v_final_check):
+        name_birth = self.model_profile["name"] + self.model_profile["birthYear"]
+        if name_birth in folder_file_data["nameBirth"]:
+            key_index = folder_file_data["nameBirth"].index(name_birth)
+            if self.model_file_info["file_name"] in folder_file_data["fileName"]:
+                return "e"  # exists
+            elif v_final_check:
+                if self.model_profile["tel"] != folder_file_data["tel"][key_index] and \
+                   self.model_profile["insta_id"] != folder_file_data["instaId"][key_index]:
+                    # 이름, 생년이 같은 동명이인인 경우 핸드폰번호와 인스타번호가 모두 다르면 새로 생성시킨다.
+                    return "x"
+                elif self.model_profile["tel"] == "" and self.model_profile["insta_id"] == "":
+                    return "s"
+                else:
+                    return ["c", folder_file_data["key"][key_index]]
+            else:
+                return ["c", folder_file_data["key"][key_index]]  # check
+        else:
+            return "x"
+
 
 def birthCompare(vBirth):
     cyear = str(date.today().year)
-    if vBirth > cyear[2:]:
-        return "19"+vBirth
+    if vBirth > cyear[2:] if len(vBirth) == 2 else cyear:
+        return "19"+vBirth if len(vBirth) == 2 else vBirth
     else:
-        return "20"+vBirth
+        return "20"+vBirth if len(vBirth) == 2 else vBirth
 
 
 def data_ins_date(vRow_text):
@@ -150,9 +176,9 @@ model_contact_box = [107950, 5013325, 1728788]  # 연락처및계약금액 : 박
 
 def shape_exec(cls_model, p_shape):
     shape_type = ""
-    if model_profile_box[1] - 10000 < p_shape.top < model_profile_box[1] + 10000 and model_profile_box[2] - 10000 < p_shape.height < model_profile_box[2] + 10000:  # profile_box
+    if model_profile_box[1] - 10000 < p_shape.top < model_profile_box[1] + 10**5 and model_profile_box[2] - 2*10**5 < p_shape.height < model_profile_box[2] + 2*10**5:  # profile_box
         shape_type = "A"
-    elif model_career_box[1] - 10**5 < p_shape.top < model_career_box[1] + 10**5 and model_career_box[2] - 2*10**5 < p_shape.height < model_career_box[2] + 2*10**5:  # career_box
+    elif model_career_box[1] - 10**5 < p_shape.top < model_career_box[1] + 10**5 and model_career_box[2] - 3*10**5 < p_shape.height:  # career_box
         shape_type = "B"
     elif model_contact_box[1] - 2*10**5 < p_shape.top < model_contact_box[1] + 6*10**5:  # contract_box
         shape_type = "C"
@@ -166,27 +192,43 @@ def shape_exec(cls_model, p_shape):
             data_ins_check = False
             if p_idx == 0:  # 이름
                 name_text = row_text.replace(" ", "")
-                if "本" in name_text:
-                    cls_model.model_profile["name"] = name_text[:name_text.index("(本")]
-                    cls_model.model_profile["real_name"] = name_text[name_text.index("(本")+2:len(name_text)-1]
-                else:
-                    cls_model.model_profile["name"] = name_text
+                if "(" in name_text and "本" not in name_text:
+                    re_desc = re.search(re.compile(re_name_desc), row_text).group()
+                    cls_model.model_profile["model_desc"] = re_desc
+                    cls_model.model_profile["name"] = re.search(re.compile("[가-힣]+"), name_text).group()
+                    data_ins_check = True
+                elif re.search(re_s, name_text) is not None:
+                    print(name_text)
+                    name_text = re.search(re.compile("[가-힣]+"), name_text).group()
 
-                # data check
-                check_val = file_insert_check(cls_model)
-                if check_val == "e":
-                    print("현 파일은 작업된 파일입니다.")
-                    cls_model.file_excuted = True
-                    break
-                elif check_val == "c":
-                    print("파일명은 다르나 이름이 존재합니다. 확인하세요.")
-                    inbox.destroy()
-                    sys.exit()
-                data_ins_check = True
-            elif "생년" in row_text or "년" in row_text:
+                if not data_ins_check:
+                    if "本" in name_text:
+                        cls_model.model_profile["name"] = name_text[:name_text.index("(本")]
+                        cls_model.model_profile["real_name"] = name_text[name_text.index("(本")+2:len(name_text)-1]
+                    else:
+                        cls_model.model_profile["name"] = name_text
+                    data_ins_check = True
+
+            if "생년" in row_text or "년" in row_text:
                 re_m = re.search(re_s, row_text)
                 if re_m is not None:
                     cls_model.model_profile["birthYear"] = birthCompare(re_m.group())
+
+                # data check
+                check_val = cls_model.file_exist_check(False)
+                if type(check_val) is list and check_val[0] == "c":
+                    print("파일명은 다르나 이름이 존재합니다. 확인하세요.")
+                    dup_ins_list = dup_ins_check(cls_model)
+                    if cls_model.model_profile["name"] in dup_ins_list["name"] and \
+                       cls_model.model_file_info["file_name"] in dup_ins_list["fileName"]:
+                        cls_model.file_excuted = True
+                        break
+                    else:
+                        pass
+                elif check_val == "e":
+                    print("현 파일은 작업된 파일입니다.")
+                    cls_model.file_excuted = True
+                    break
                 data_ins_check = True
             elif "신장" in row_text or "cm" in row_text:
                 re_m = re.search(re_s, row_text)
@@ -209,34 +251,39 @@ def shape_exec(cls_model, p_shape):
                     cls_model.model_profile["hobbyNspec"].extend(re_m.split(","))
                 data_ins_check = True
 
-            if "신발" in row_text or "shoes" in row_text.lower():
-                re_text = re.compile(r"신발[가-힣]*\s*:?\s*[0-9]{3}[mm]*")  # 신발사이즈: 000mm or 신발: 000
+            if "신발" in row_text or "슈즈" in row_text or "shoes" in row_text.lower():
+                re_text = re.compile(r"[신발|슈즈|shoes|SHOES|Shoes][가-힣]*\s*:?\s*[0-9]{3}[~]*[0-9]{0,3}[mm]*")  # 신발사이즈: 000mm or 신발: 000
                 re_m = re.search(re_text, row_text).group()
-                m_num = re.search(re.compile("[0-9]{3}"), re_m).group()
+                m_num = re.search(re.compile("[0-9]{3}[~]*[0-9]{0,3}"), re_m).group()
                 cls_model.model_profile["sizeShoe"] = m_num
                 data_ins_check = True
 
             re_size_show = re.search(re.compile("[2|3][0-9]{2}(?!cm)"), row_text)
             if re_size_show is not None and int(re_size_show.group()) >= 220:  # 신발사이즈 : 신발 명시 없이 세자리 숫자(2xx)
-                re_text = re.compile(r"\s*:?\s*[2|3][0-9]{2}[mm]*")  # 신발사이즈: 000mm or 신발: 000
+                re_text = re.compile(r"\s*:?\s*[2|3][0-9]{2}[~]*[2|3]*[0-9]{0,2}[mm]*")  # 신발사이즈: 000mm or 신발: 000
                 re_m = re.search(re_text, row_text).group()
-                m_num = re.search(re.compile("[0-9]{3}"), re_m).group()
+                m_num = re.search(re.compile("[0-9]{3}[~]*[0-9]{0,3}"), re_m).group()
                 cls_model.model_profile["sizeShoe"] = m_num
                 data_ins_check = True
 
-            if "상의"in row_text:
-                re_text = re.compile(r"상의:?\s*[0-9]{2,3}")
-                re_m = re.search(re_text, row_text).group()
-                m_num = re.search(re.compile("[0-9]{3}"), re_m).group()
-                cls_model.model_profile["sizeTop"] = m_num
+            re_top_pants = re.search(re.compile(r"상[.]*하[\w]*[_| ]*[0-9]{2}"), row_text)
+            if re_top_pants is not None:
+                cls_model.model_profile["size_other"] = re.search(re.compile("[0-9]{2}"), re_top_pants.group()).group()
                 data_ins_check = True
+            else:
+                if "상의" in row_text:
+                    re_text = re.compile(r"상의:?\s*[0-9]{2,3}[~]*[0-9]{0,3}")
+                    re_m = re.search(re_text, row_text).group()
+                    m_num = re.search(re.compile("[0-9]{2,3}[~]*[0-9]{0,3}"), re_m).group()
+                    cls_model.model_profile["sizeTop"] = m_num
+                    data_ins_check = True
 
-            if "하의"in row_text:
-                re_text = re.compile(r"하의:?\s*[0-9]{2}")
-                re_m = re.search(re_text, row_text).group()
-                m_num = re.search(re.compile("[0-9]{2}"), re_m).group()
-                cls_model.model_profile["sizePants"] = m_num
-                data_ins_check = True
+                if "하의" in row_text:
+                    re_text = re.compile(r"하의:?\s*[0-9]{2}[~]*[0-9]{0,2}")
+                    re_m = re.search(re_text, row_text).group()
+                    m_num = re.search(re.compile("[0-9]{2}[~]*[0-9]{0,2}"), re_m).group()
+                    cls_model.model_profile["sizePants"] = m_num
+                    data_ins_check = True
 
             re_size = re.search(re.compile("[0-9]{2}-[0-9]{2}-[0-9]{2}"), row_text.replace(" ", ""))
             if re_size is not None:
@@ -350,7 +397,7 @@ def shape_exec(cls_model, p_shape):
                 if re_tel_chk is None and "@" not in row_text and ("개월" in row_text or len(re.findall(re.compile("[3|6|1]"), row_text))):
                     amt_type = re.search(re.compile(r"^[\(*가-힣+\)*\s*]+"), row_text)
                     if amt_type is not None:
-                        model_amt_type = re.sub(r" |\(|\)", "", amt_type.group())
+                        model_amt_type = re.sub(r" ", "", amt_type.group())
                     else:
                         model_amt_type = "해당없음"
 
@@ -364,13 +411,13 @@ def shape_exec(cls_model, p_shape):
                                 #     print("계약금액 추출 중 3,6,1 이외의 숫자 추출됨")
                                 #     sys.exit()
                                 # else:
-                                cls_model.model_contract_amt[cls_model.model_amt_type]['amount'].append([
+                                cls_model.model_contract_amt[model_amt_type]['amount'].append([
                                     ("12" if month_amt[0] == "1" else month_amt[0]), float(month_amt[1])*10000 if "." in month_amt[1] else month_amt[1], data_ins_date(row_text)
                                 ])
                                 data_ins_chk = True
 
                         re_amt_ap = re.search(re_amt_ap_text, row_text)
-                        cls_model.model_contract_amt[cls_model.model_amt_type]['ap'] = re.sub(r" |\(|\)", "", re_amt_ap.group()) if re_amt_ap is not None else ""
+                        cls_model.model_contract_amt[model_amt_type]['ap'] = re.sub(r" |\(|\)", "", re_amt_ap.group()) if re_amt_ap is not None else ""
 
                 if not data_ins_chk and len(row_text):
                     content_ext = re.sub(r"s*\(+\d{6}\)+\s*", "", row_text)
@@ -378,28 +425,58 @@ def shape_exec(cls_model, p_shape):
 
 
 def ppt_file_exec(vFilePath):
+    if "~" in os.path.basename(vFilePath):
+        return
     prs = Presentation(vFilePath)
-    print(vFilePath)
+    print('---- ', vFilePath)
     model = Model()
     model.model_file_info["model_gubun"] = os.path.basename(os.path.dirname(vFilePath))
-    model.model_file_info["model_dir_route"] = os.path.dirname(vFilePath).replace(access_root, "")
+    model.model_file_info["model_dir_route"] = os.path.dirname(vFilePath).replace(os.path.abspath(access_root), "")
     model.model_file_info["file_name"] = os.path.basename(vFilePath)
-    model.model_file_info["file_path"] = vFilePath
+    model.model_file_info["folder_path"] = vFilePath
+
+    global folder_file_data
+    if not folder_file_data:
+        folder_file_data = get_file_list(model.model_file_info["model_dir_route"])
+
     try:
         for slide in prs.slides:
             for shape in slide.shapes:
                 if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                     for g_idx, g_shape in enumerate(shape.shapes):
                         if g_shape.left < 200000 and g_shape.height > 300000:  # Profile shape와 빈 shape 제외
-                            if hasattr(g_shape, "text"):
+                            if hasattr(g_shape, "text") and len(g_shape.text):
                                 shape_exec(model, g_shape)
-                                if model.file_excuted:
+                                if model.file_excuted == "dup_check":
+                                    raise DupCheck
+                                elif model.file_excuted:
                                     raise GetOutLoop
-                elif shape.has_text_frame:
+                elif shape.has_text_frame and len(shape.text):
                     if shape.left < 200000 and shape.height > 300000:
                         shape_exec(model, shape)
+                        if model.file_excuted == "dup_check":
+                            raise DupCheck
+                        elif model.file_excuted:
+                            raise GetOutLoop
+
+        check_val = model.file_exist_check(True)
+        if type(check_val) is list and check_val[0] == "c":
+            model.file_excuted = "dup_check"
+            model.file_dup_bf_key = check_val[1]
+            raise DupCheck
+        elif check_val == "s":
+            db_close()
+            raise Exception("중복 이름(동명이인) 확인 필요!")
     except GetOutLoop:
         model.model_career["type"] = ""
+        model.file_excuted = False
+        return
+    except DupCheck:
+        model.model_career["type"] = ""
+        model.file_excuted = False
+        model_dup_ins(model)
+        print("** 중복 파일로 추가됨")
+        conn.commit()
         return
 
     model.model_career["type"] = ""
@@ -421,10 +498,17 @@ def ppt_file_exec(vFilePath):
     commit_status.append(file_info_ins(model, key_value))  # insert file_info
     if commit_status:
         conn.commit()
+        folder_file_data["key"].append(key_value)
+        folder_file_data["nameBirth"].append(model.model_profile["name"]+model.model_profile["birthYear"])
+        folder_file_data["fileName"].append(model.model_file_info["file_name"])
     else:
         db_cancel()
         inbox.destroy()
         sys.exit()
+
+
+# folder_file_compare_db 실행 후 결과 list를 copy
+mod_list = ['구종근92_2.pptx', '김우래83.pptx']
 
 
 def ppt_data_exec(vType):
@@ -432,18 +516,30 @@ def ppt_data_exec(vType):
         ppt_file = None
         while ppt_file is None:
             ppt_file = filedialog.askopenfilename(initialdir=access_root, filetypes=[("ppt files", "*.pptx;*.ppt")])
-        ppt_file_exec(ppt_file)
-        db_close
+        if not len(mod_list) or os.path.basename(ppt_file) in mod_list:
+            ppt_file_exec(os.path.abspath(ppt_file))
+        else:
+            print(os.path.basename(ppt_file)+" 파일이 mod_list 안에 존재하지 않습니다.")
+        db_close()
         inbox.destroy()
     else:
         ppt_folder = None
         while ppt_folder is None:
             ppt_folder = filedialog.askdirectory(initialdir=access_root)
 
+        max_file_data = get_max_data(os.path.abspath(ppt_folder).replace(os.path.abspath(access_root), ""))
+        search_check = False
         for file in sorted(os.scandir(ppt_folder), key=lambda x: x.name):
             if file.is_file() and (file.name.endswith(".ppt") or file.name.endswith(".pptx")):
-                ppt_file_exec(file.path)
-        db_close
+                if not len(mod_list):
+                    if file.name == max_file_data:
+                        search_check = True
+                        continue
+                    if max_file_data == "" or search_check:
+                        ppt_file_exec(os.path.abspath(file.path))
+                elif file.name in mod_list:
+                    ppt_file_exec(os.path.abspath(file.path))
+        db_close()
         inbox.destroy()
 
 

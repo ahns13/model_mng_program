@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>959</width>
-    <height>669</height>
+    <width>977</width>
+    <height>724</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>20</x>
       <y>140</y>
       <width>921</width>
-      <height>421</height>
+      <height>501</height>
      </rect>
     </property>
     <property name="editTriggers">
@@ -43,11 +43,6 @@
     </column>
     <column>
      <property name="text">
-      <string>키</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
       <string>연락처</string>
      </property>
     </column>
@@ -61,51 +56,35 @@
       <string>작성일자</string>
      </property>
     </column>
+    <column>
+     <property name="text">
+      <string>파일명</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>파일위치</string>
+     </property>
+    </column>
    </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
       <x>23</x>
-      <y>30</y>
-      <width>64</width>
-      <height>15</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;모델명&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEdit">
-    <property name="geometry">
-     <rect>
-      <x>100</x>
-      <y>27</y>
-      <width>113</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btn_search">
-    <property name="geometry">
-     <rect>
-      <x>240</x>
       <y>22</y>
-      <width>93</width>
-      <height>28</height>
+      <width>91</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>조회</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;모델 PROFILE&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>580</y>
+      <y>650</y>
       <width>214</width>
       <height>30</height>
      </rect>
@@ -154,6 +133,45 @@
      </item>
     </layout>
    </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>40</y>
+      <width>241</width>
+      <height>80</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLineEdit" name="lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>113</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_search">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>15</y>
+       <width>93</width>
+       <height>28</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>조회</string>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -161,8 +179,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>959</width>
-     <height>26</height>
+     <width>977</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
