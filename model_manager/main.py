@@ -38,6 +38,13 @@ class MainWindow(QMainWindow, form_class):
         self.pageSize = 20
         self.searchName = ""
 
+        # comboBox
+        self.combo_profile = get_comboBox_list_a("PROFILE")
+        self.combo_career = get_comboBox_list_a("CAREER")
+        self.combo_contact = get_comboBox_list_a("CONTACT")
+        self.combo_contract = get_comboBox_list_a("CONTRACT")
+        self.combo_other = get_comboBox_list_a("OTHER")
+
         self.show()
         print(dir(self))
 
