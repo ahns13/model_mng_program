@@ -29,21 +29,36 @@ class MainWindow(QMainWindow, form_class):
         self.btn_prev.clicked.connect(lambda: self.tablePaging("prev"))
 
         # lineEdit
-        self.lineEdit.returnPressed.connect(self.getDefaultTableData)
+        # self.lineEdit.returnPressed.connect(self.getDefaultTableData)
 
         # modelData
         self.tablePageNo = 0
         self.modelDataLen = 0
         self.maxPageSize = None
         self.pageSize = 20
-        self.searchName = ""
 
         # comboBox
-        self.combo_profile = get_comboBox_list_a("PROFILE")
-        self.combo_career = get_comboBox_list_a("CAREER")
-        self.combo_contact = get_comboBox_list_a("CONTACT")
-        self.combo_contract = get_comboBox_list_a("CONTRACT")
-        self.combo_other = get_comboBox_list_a("OTHER")
+        self.combo_data_profile = get_comboBox_list_a("PROFILE")
+        self.combo_data_career = get_comboBox_list_career()
+        self.combo_data_contact = get_comboBox_list_a("CONTACT")
+        self.combo_data_contract = get_comboBox_list_a("CONTRACT")
+        # self.combo_other = get_comboBox_list_a("OTHER")
+
+        list_view = QListView()
+        self.combo_career.setView(list_view)
+
+        self.combo_profile.addItems(self.combo_data_profile[0])
+        self.combo_career.addItems(self.combo_data_career[0])
+        self.combo_contact.addItems(self.combo_data_contact[0])
+        self.combo_contract.addItems(self.combo_data_contract[0])
+
+        self.combo_career.setStyleSheet('''
+            QComboBox QAbstractItemView::item { min-width: 100px; min-height: 30px;}
+            QListView::item:selected { color: red; background-color: lightgray; min-width: 1000px;}"
+            ''')
+        # QComboBox { max-width: 120px; min-height: 30px;}
+
+        cursor.close()
 
         self.show()
         print(dir(self))
@@ -52,20 +67,18 @@ class MainWindow(QMainWindow, form_class):
         self.tablePageNo = 0
         self.modelDataLen = 0
         self.maxPageSize = None
-        self.searchName = ""
-        self.comboBox.clear()
+        self.combo_page.clear()
 
     def getDefaultTableData(self):
-        self.searchName = self.lineEdit.text()
         self.tableWidget.removeRow(0)
         self.tablePageNo = 1
         # model_data = [[1,2,3,4,5,6], [1,2,3,4,5,6], [1,2,3,4,5,6]]
-        model_data = get_model_list(self.tablePageNo, self.pageSize, self.searchName)
+        model_data = get_model_list(self.tablePageNo, self.pageSize, {})
         self.modelDataLen = model_data[0][self.tableColCount]
         self.maxPageSize = math.ceil(self.modelDataLen/self.pageSize)
-        self.comboBox.clear()
-        self.comboBox.addItems([str(x) for x in range(1, self.maxPageSize+1)])
-        self.comboBox.activated.connect(lambda: self.tablePaging(None, self.comboBox.currentText()))
+        self.combo_page.clear()
+        self.combo_page.addItems([str(x) for x in range(1, self.maxPageSize+1)])
+        self.combo_page.activated.connect(lambda: self.tablePaging(None, self.comboBox.currentText()))
 
         if self.modelDataLen:
             self.modelDataUpdate(model_data)
@@ -81,7 +94,7 @@ class MainWindow(QMainWindow, form_class):
                 return
             else:
                 self.tablePageNo += 1
-                self.comboBox.setCurrentIndex(self.tablePageNo-1)
+                self.combo_page.setCurrentIndex(self.tablePageNo-1)
         elif v_btn_type == "prev":
             if self.tablePageNo == 0:
                 return
@@ -90,12 +103,12 @@ class MainWindow(QMainWindow, form_class):
                 return
             else:
                 self.tablePageNo -= 1
-                self.comboBox.setCurrentIndex(self.tablePageNo-1)
+                self.combo_page.setCurrentIndex(self.tablePageNo-1)
         elif v_page_no and v_page_no != self.tablePageNo:
             self.tablePageNo = int(v_page_no)
 
         # model_data = [[10,20,30,40,50,60], [99,88,77,66,55,44], [7,6,5,4,3,2]]
-        model_data = get_model_list(self.tablePageNo, self.pageSize, self.searchName)
+        model_data = get_model_list(self.tablePageNo, self.pageSize, {})
         self.modelDataUpdate(model_data)
 
     def modelDataUpdate(self, v_model_data):

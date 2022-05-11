@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>977</width>
+    <width>1010</width>
     <height>724</height>
    </rect>
   </property>
@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>140</y>
+      <y>160</y>
       <width>921</width>
-      <height>501</height>
+      <height>481</height>
      </rect>
     </property>
     <property name="editTriggers">
@@ -77,7 +77,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;모델 PROFILE&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;모델 PROFILE&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QWidget" name="layoutWidget">
@@ -104,7 +104,7 @@
       </widget>
      </item>
      <item alignment="Qt::AlignVCenter">
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QComboBox" name="combo_page">
        <property name="maximumSize">
         <size>
          <width>40</width>
@@ -138,39 +138,248 @@
      <rect>
       <x>20</x>
       <y>40</y>
-      <width>241</width>
-      <height>80</height>
+      <width>242</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="title">
      <string/>
     </property>
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="lineEdit_profile">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>113</width>
-       <height>20</height>
+       <x>100</x>
+       <y>10</y>
+       <width>80</width>
+       <height>22</height>
       </rect>
      </property>
      <property name="text">
       <string/>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_search">
+    <widget class="QPushButton" name="btn_profile">
      <property name="geometry">
       <rect>
-       <x>130</x>
-       <y>15</y>
-       <width>93</width>
-       <height>28</height>
+       <x>184</x>
+       <y>9</y>
+       <width>50</width>
+       <height>24</height>
       </rect>
      </property>
      <property name="text">
-      <string>조회</string>
+      <string>추가</string>
      </property>
     </widget>
+    <widget class="QComboBox" name="combo_profile">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>85</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_2">
+    <property name="geometry">
+     <rect>
+      <x>266</x>
+      <y>40</y>
+      <width>241</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLineEdit" name="lineEdit_career">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>10</y>
+       <width>80</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_career">
+     <property name="geometry">
+      <rect>
+       <x>184</x>
+       <y>9</y>
+       <width>50</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>추가</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="combo_career">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>85</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>269</x>
+      <y>22</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;경력(CAREER)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_3">
+    <property name="geometry">
+     <rect>
+      <x>511</x>
+      <y>40</y>
+      <width>241</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLineEdit" name="lineEdit_contact">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>10</y>
+       <width>80</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_contact">
+     <property name="geometry">
+      <rect>
+       <x>184</x>
+       <y>9</y>
+       <width>50</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>추가</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="combo_contact">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>85</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>514</x>
+      <y>22</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;매니저/소속사&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_4">
+    <property name="geometry">
+     <rect>
+      <x>756</x>
+      <y>40</y>
+      <width>241</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLineEdit" name="lineEdit_contract">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>10</y>
+       <width>80</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_contract">
+     <property name="geometry">
+      <rect>
+       <x>183</x>
+       <y>9</y>
+       <width>50</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>추가</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="combo_contract">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>85</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>759</x>
+      <y>22</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;계약 정보&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_search">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>130</y>
+      <width>70</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>조 회</string>
+    </property>
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -179,7 +388,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>977</width>
+     <width>1010</width>
      <height>21</height>
     </rect>
    </property>

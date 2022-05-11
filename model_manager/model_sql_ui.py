@@ -99,7 +99,6 @@ def get_comboBox_list_a(v_combo_type):
     try:
         cursor.execute(sql)
         result = cursor.fetchall()
-        cursor.close()
         item_list, item_table_map, comboBox_dir = [], {}, {}
         for row in result:
             item_list.append(row[3])
@@ -118,20 +117,20 @@ def get_comboBox_list_a(v_combo_type):
         sys.exit()
 
 
-def get_comboBox_list_career(v_no):
+def get_comboBox_list_career():
     sql = "SELECT COL_DISPLAY_NAME\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = 'CAREER'\n"
-    sql += "   AND COMBO_DETAIL_TYPE IN ('DATA', 'DATA" + str(v_no) + "')\n"
+    sql += "   AND COMBO_DETAIL_TYPE = 'DATA'\n"
     sql += " ORDER BY SORT_ORDER"
     try:
         cursor.execute(sql)
         result = cursor.fetchall()
-        comboBox_dir = {}
+        item_list, comboBox_dir = [], {}
         for row in result:
+            item_list.append(row[0])
             comboBox_dir[row[0]] = []
-        return [result, comboBox_dir]
-        cursor.close()
+        return [item_list, comboBox_dir]
     except cx_Oracle.DatabaseError as e:
         error, = e.args
         print(sql)
