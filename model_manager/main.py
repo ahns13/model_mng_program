@@ -2,7 +2,7 @@ import sys, math
 from PyQt5 import QtWidgets
 from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import pyqtSlot
+import copy
 
 from model_sql_ui import *
 
@@ -44,12 +44,12 @@ class MainWindow(QMainWindow, form_class):
         self.combo_data_contact = get_comboBox_list_a("CONTACT")
         self.combo_data_contract = get_comboBox_list_a("CONTRACT")
         # self.combo_other = get_comboBox_list_a("OTHER")
-        self.combo_search_items = {
-            "PROFILE": self.combo_data_profile,
-            "HOBBYNSPEC": {},
-            "CAREER": self.combo_data_career,
-            "CONTACT": self.combo_data_contact,
-            "CONTRACT": self.combo_data_contract
+        self.combo_search_data = {}
+        self.search_input_count = {
+            "profile": 0,
+            "career": 0,
+            "contact": 0,
+            "contract": 0
         }
 
         list_view = QListView()
@@ -71,18 +71,16 @@ class MainWindow(QMainWindow, form_class):
         self.comboStyleCss(self.combo_contact, "120")
         self.comboStyleCss(self.combo_contract, "90")
 
-        self.btn_profile.clicked.connect(lambda: self.scrollAreaInputBtn("profile"))
-        self.btn_career.clicked.connect(lambda: self.scrollAreaInputBtn("career"))
-        self.btn_contact.clicked.connect(lambda: self.scrollAreaInputBtn("contact"))
-        self.btn_contract.clicked.connect(lambda: self.scrollAreaInputBtn("contract"))
+        self.btn_profile.clicked.connect(lambda: self.searchItemAdd("profile"))
+        self.btn_career.clicked.connect(lambda: self.searchItemAdd("career"))
+        self.btn_contact.clicked.connect(lambda: self.searchItemAdd("contact"))
+        self.btn_contract.clicked.connect(lambda: self.searchItemAdd("contract"))
 
         self.itemLayout = QBoxLayout(QBoxLayout.LeftToRight)
         self.gbox_input_item.setLayout(self.itemLayout)
 
         # 버튼: 초기화
         self.btn_items_clear.clicked.connect(lambda: self.deleteItemBtn(True, ""))
-
-        cursor.close()
 
         self.show()
         print(dir(self))
@@ -94,8 +92,7 @@ class MainWindow(QMainWindow, form_class):
             QListView::item:selected { font: bold large; color: blue; background-color: #ebe6df; min-width: 1000px; }"
             ''')
 
-    @pyqtSlot()
-    def scrollAreaInputBtn(self, v_search_type):
+    def searchItemAdd(self, v_search_type):
         cur_combo = getattr(self, "combo_" + v_search_type)
         cur_lineEdit = getattr(self, "lineEdit_" + v_search_type)
 
@@ -103,18 +100,56 @@ class MainWindow(QMainWindow, form_class):
             input_item = QPushButton(cur_combo.currentText()+":"+cur_lineEdit.text())
             input_item.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 버튼 사이즈 텍스트에 맞춤
             input_item.setStyleSheet("font-size: 9pt;")
-            input_item.clicked.connect(lambda: self.deleteItemBtn(False, input_item))
+            input_item.clicked.connect(lambda: self.deleteItemBtn(False, input_item, v_search_type))
             self.itemLayout.addWidget(input_item)
             self.itemLayout.setAlignment(QtCore.Qt.AlignLeft)
-            cur_lineEdit.clear()
 
-    def deleteItemBtn(self, v_clear_gbn, clicked_button):
+        cur_combo_data = getattr(self, "combo_data_" + v_search_type)
+        if v_search_type == "career":
+            cur_combo_data[1][cur_combo.currentText()].append(cur_lineEdit.text())
+        else:
+            cur_combo_data[1][cur_combo.currentText()][2]["s"].append(cur_lineEdit.text())
+        self.search_input_count[v_search_type] += 1
+        cur_lineEdit.clear()
+
+    def deleteItemBtn(self, v_clear_gbn, clicked_button, v_del_search_type=None):
         if v_clear_gbn:
             for i in reversed(range(self.itemLayout.count())):
                 self.itemLayout.itemAt(i).widget().deleteLater()
+            for i_type in self.search_input_count.keys():
+                if self.search_input_count[i_type] > 0:
+                    cur_combo_data = getattr(self, "combo_data_" + i_type)
+                    if i_type == "career":
+                        career_search_types = cur_combo_data[1]
+                        for c_type in career_search_types.keys():
+                            cur_combo_data[1][c_type] = []
+                    else:
+                        search_types = cur_combo_data[1]
+                        for s_type in search_types.keys():
+                            cur_combo_data[1][s_type][2]["s"] = []
+                    self.search_input_count[i_type] = 0
+                    print(cur_combo_data)
         else:
             self.itemLayout.removeWidget(clicked_button)
             clicked_button.deleteLater()
+
+            del_btn_info = clicked_button.text().split(":")
+            cur_combo_data = getattr(self, "combo_data_" + v_del_search_type)
+            if v_del_search_type == "career":
+                cur_combo_data[1][del_btn_info[0]].remove(del_btn_info[1])
+            else:
+                cur_combo_data[1][del_btn_info[0]][2]["s"].remove(del_btn_info[1])
+            self.search_input_count[v_del_search_type] -= 1
+
+    def searchDataMaker(self):
+        profile_data = copy.deepcopy(self.combo_data_profile[1])
+        self.combo_search_data = {
+            "HOBBYNSPEC": {"취미/특기": profile_data.pop("취미/특기")},
+            "PROFILE": profile_data,
+            "CAREER": copy.deepcopy(self.combo_data_career[1]),
+            "CONTACT": copy.deepcopy(self.combo_data_contact[1]),
+            "CONTRACT": copy.deepcopy(self.combo_data_contract[1])
+        }
 
     def tableDataInit(self):
         self.tablePageNo = 0
@@ -126,7 +161,9 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.removeRow(0)
         self.tablePageNo = 1
         # model_data = [[1,2,3,4,5,6], [1,2,3,4,5,6], [1,2,3,4,5,6]]
-        model_data = get_model_list(self.tablePageNo, self.pageSize, {})
+        self.searchDataMaker()
+        model_data = get_model_list(self.tablePageNo, self.pageSize, self.combo_search_data)
+        print(model_data)
         self.modelDataLen = model_data[0][self.tableColCount]
         self.maxPageSize = math.ceil(self.modelDataLen/self.pageSize)
         self.combo_page.clear()

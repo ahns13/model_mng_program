@@ -2,11 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="COGDW")
-cursor = conn.cursor()
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="COGDW")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -18,7 +17,8 @@ def condition_add(v_tab_alias, v_srch_dir):
         if srch_items["s"]:
             for idx, item in enumerate(srch_items["s"]):
                 insert_check += 1
-                srch_sql += (" OR " if idx else "") + v_tab_alias + "." + v_srch_dir[key][0] + " " + v_srch_dir[key][1] +" '%" + item + "%'"
+                srch_sql += (" OR " if idx else "") + v_tab_alias + "." + v_srch_dir[key][0] + " " + \
+                            v_srch_dir[key][1] + (" '%" + item + "%'" if v_srch_dir[key][1] == "LIKE" else " '" + item + "'")
         if srch_items["ge"]:
             insert_check += 1
             srch_sql2 += ("        OR (" if srch_sql else "        (") + v_tab_alias + "." + v_srch_dir[key][0] + " >= "+ srch_items["ge"]
@@ -29,10 +29,10 @@ def condition_add(v_tab_alias, v_srch_dir):
             else:
                 srch_sql2 += " AND " if srch_items["ge"] else "        ("
             srch_sql2 += v_tab_alias + "." + v_srch_dir[key][0] + " <= "+ srch_items["le"] + ")"
-        else:
+        elif srch_items["ge"]:
             srch_sql2 += ")"
         if insert_check:
-            v_sql += "   AND (" + srch_sql + "\n" + srch_sql2 + ")\n"
+            v_sql += "   AND (" + srch_sql + ("\n" + srch_sql2 if srch_sql2 else "") + ")\n"
     return v_sql
 
 
@@ -52,7 +52,8 @@ def condition_career(v_tab_alias, v_srch_dir):
 
 
 def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
-    sql = "SELECT A.*, COUNT(A.NAME) OVER () AS TOTAL_CNT\n"
+    cursor = conn.cursor()
+    sql = "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, COUNT(A.NAME) OVER () AS TOTAL_CNT\n"
     sql += "  FROM (\n"
     sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE\n"
     sql += "  FROM MODEL_PROFILE A\n"
@@ -65,25 +66,31 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += " WHERE 1=1\n"
     srch_profile = v_search_dir["PROFILE"]
     sql += condition_add("A", srch_profile)
+    print('PROFILE')
     srch_hobbynspec = v_search_dir["HOBBYNSPEC"]
     sql += condition_add("C", srch_hobbynspec)
+    print('HOBBYNSPEC')
     srch_career = v_search_dir["CAREER"]
     sql += condition_career("D", srch_career)
+    print('CAREER')
     srch_contact = v_search_dir["CONTACT"]
     sql += condition_add("E", srch_contact)
+    print('CONTACT')
     srch_amount= v_search_dir["CONTRACT"]
     sql += condition_add("F", srch_amount)
-    srch_other = v_search_dir["OTHER"]
-    sql += condition_add("G", srch_other)
+    print('CONTRACT')
+    # srch_other = v_search_dir["OTHER"]
+    # sql += condition_add("G", srch_other)
     sql += "       ) A\n"
     sql += " ORDER BY A.NAME\n"
     sql += "OFFSET " + str(v_page_size) + "*(" + str(v_page_no) + "-1) ROWS\n"
     sql += " FETCH NEXT " + str(v_page_size) + " ROWS ONLY"
     try:
+        print(sql)
         cursor.execute(sql)
         result = cursor.fetchall()
-        return result
         cursor.close()
+        return result
     except cx_Oracle.DatabaseError as e:
         error, = e.args
         print(sql)
@@ -96,6 +103,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
 
 
 def get_comboBox_list_a(v_combo_type):
+    cursor = conn.cursor()
     sql = "SELECT TABLE_NAME, COMBO_DETAIL_TYPE, COL_NAME, COL_DISPLAY_NAME, COMPARE_OPERATOR\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = '" + v_combo_type + "'\n"
@@ -108,6 +116,7 @@ def get_comboBox_list_a(v_combo_type):
             item_list.append(row[3])
             comboBox_dir[row[3]] = [row[2], row[4], {"s": [], "ge": "", "le": ""}]
             # 테이블명: { 항목명: [칼럼명, 연산자, 검색목록] }
+        cursor.close()
         return [item_list, comboBox_dir]
     except cx_Oracle.DatabaseError as e:
         error, = e.args
@@ -121,6 +130,7 @@ def get_comboBox_list_a(v_combo_type):
 
 
 def get_comboBox_list_career():
+    cursor = conn.cursor()
     sql = "SELECT COL_DISPLAY_NAME\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = 'CAREER'\n"
@@ -133,6 +143,7 @@ def get_comboBox_list_career():
         for row in result:
             item_list.append(row[0])
             comboBox_dir[row[0]] = []
+        cursor.close()
         return [item_list, comboBox_dir]
     except cx_Oracle.DatabaseError as e:
         error, = e.args
