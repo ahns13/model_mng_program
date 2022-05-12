@@ -2,6 +2,7 @@ import sys, math
 from PyQt5 import QtWidgets
 from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import pyqtSlot
 
 from model_sql_ui import *
 
@@ -15,8 +16,8 @@ class MainWindow(QMainWindow, form_class):
 
         # tableWidget
         self.tableColCount = self.tableWidget.columnCount()
-        self.tableWidget.setColumnWidth(0, 80)
-        self.tableWidget.setColumnWidth(1, 60)
+        self.tableWidget.setColumnWidth(0, 90)
+        self.tableWidget.setColumnWidth(1, 80)
         self.tableWidget.setColumnWidth(2, 120)
         self.tableWidget.setColumnWidth(3, 120)
         self.tableWidget.setColumnWidth(4, 80)
@@ -43,25 +44,77 @@ class MainWindow(QMainWindow, form_class):
         self.combo_data_contact = get_comboBox_list_a("CONTACT")
         self.combo_data_contract = get_comboBox_list_a("CONTRACT")
         # self.combo_other = get_comboBox_list_a("OTHER")
+        self.combo_search_items = {
+            "PROFILE": self.combo_data_profile,
+            "HOBBYNSPEC": {},
+            "CAREER": self.combo_data_career,
+            "CONTACT": self.combo_data_contact,
+            "CONTRACT": self.combo_data_contract
+        }
 
         list_view = QListView()
+        self.combo_profile.setView(list_view)
+        list_view = QListView()
         self.combo_career.setView(list_view)
+        list_view = QListView()
+        self.combo_contact.setView(list_view)
+        list_view = QListView()
+        self.combo_contract.setView(list_view)
 
         self.combo_profile.addItems(self.combo_data_profile[0])
         self.combo_career.addItems(self.combo_data_career[0])
         self.combo_contact.addItems(self.combo_data_contact[0])
         self.combo_contract.addItems(self.combo_data_contract[0])
 
-        self.combo_career.setStyleSheet('''
-            QComboBox QAbstractItemView::item { min-width: 100px; min-height: 30px;}
-            QListView::item:selected { color: red; background-color: lightgray; min-width: 1000px;}"
-            ''')
-        # QComboBox { max-width: 120px; min-height: 30px;}
+        self.comboStyleCss(self.combo_profile, "90")
+        self.comboStyleCss(self.combo_career, "120")
+        self.comboStyleCss(self.combo_contact, "120")
+        self.comboStyleCss(self.combo_contract, "90")
+
+        self.btn_profile.clicked.connect(lambda: self.scrollAreaInputBtn("profile"))
+        self.btn_career.clicked.connect(lambda: self.scrollAreaInputBtn("career"))
+        self.btn_contact.clicked.connect(lambda: self.scrollAreaInputBtn("contact"))
+        self.btn_contract.clicked.connect(lambda: self.scrollAreaInputBtn("contract"))
+
+        self.itemLayout = QBoxLayout(QBoxLayout.LeftToRight)
+        self.gbox_input_item.setLayout(self.itemLayout)
+
+        # 버튼: 초기화
+        self.btn_items_clear.clicked.connect(lambda: self.deleteItemBtn(True, ""))
 
         cursor.close()
 
         self.show()
         print(dir(self))
+
+    def comboStyleCss(self, obj_comboBox, v_list_width):
+        obj_comboBox.setStyleSheet('''
+            QComboBox QAbstractItemView { min-width: '''+v_list_width+'''px; }
+            QComboBox QAbstractItemView::item { min-height: 12px; }
+            QListView::item:selected { font: bold large; color: blue; background-color: #ebe6df; min-width: 1000px; }"
+            ''')
+
+    @pyqtSlot()
+    def scrollAreaInputBtn(self, v_search_type):
+        cur_combo = getattr(self, "combo_" + v_search_type)
+        cur_lineEdit = getattr(self, "lineEdit_" + v_search_type)
+
+        if cur_lineEdit.text():
+            input_item = QPushButton(cur_combo.currentText()+":"+cur_lineEdit.text())
+            input_item.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 버튼 사이즈 텍스트에 맞춤
+            input_item.setStyleSheet("font-size: 9pt;")
+            input_item.clicked.connect(lambda: self.deleteItemBtn(False, input_item))
+            self.itemLayout.addWidget(input_item)
+            self.itemLayout.setAlignment(QtCore.Qt.AlignLeft)
+            cur_lineEdit.clear()
+
+    def deleteItemBtn(self, v_clear_gbn, clicked_button):
+        if v_clear_gbn:
+            for i in reversed(range(self.itemLayout.count())):
+                self.itemLayout.itemAt(i).widget().deleteLater()
+        else:
+            self.itemLayout.removeWidget(clicked_button)
+            clicked_button.deleteLater()
 
     def tableDataInit(self):
         self.tablePageNo = 0

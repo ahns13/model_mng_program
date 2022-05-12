@@ -2,9 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="COGDW")
 cursor = conn.cursor()
 
 
@@ -17,17 +18,17 @@ def condition_add(v_tab_alias, v_srch_dir):
         if srch_items["s"]:
             for idx, item in enumerate(srch_items["s"]):
                 insert_check += 1
-                srch_sql += (" OR " if idx else "") + v_tab_alias + "." + key + " " + v_srch_dir[key][1] +" '%" + item + "%'"
+                srch_sql += (" OR " if idx else "") + v_tab_alias + "." + v_srch_dir[key][0] + " " + v_srch_dir[key][1] +" '%" + item + "%'"
         if srch_items["ge"]:
             insert_check += 1
-            srch_sql2 += ("        OR (" if srch_sql else "        (") + v_tab_alias + "." + key + " >= "+ srch_items["ge"]
+            srch_sql2 += ("        OR (" if srch_sql else "        (") + v_tab_alias + "." + v_srch_dir[key][0] + " >= "+ srch_items["ge"]
         if srch_items["le"]:
             insert_check += 1
             if srch_sql:
                 srch_sql2 += " AND " if srch_items["ge"] else "        OR ("
             else:
                 srch_sql2 += " AND " if srch_items["ge"] else "        ("
-            srch_sql2 += v_tab_alias + "." + key + " <= "+ srch_items["le"] + ")"
+            srch_sql2 += v_tab_alias + "." + v_srch_dir[key][0] + " <= "+ srch_items["le"] + ")"
         else:
             srch_sql2 += ")"
         if insert_check:
@@ -41,7 +42,10 @@ def condition_career(v_tab_alias, v_srch_dir):
         type_list = v_srch_dir[key]
         if type_list:
             for item in type_list:
-                v_sql += (" OR " if v_sql else "") + v_tab_alias + "." + key + " LIKE '%" + item + "%'"
+                if key == "전체":
+                    v_sql += (" OR " if v_sql else "") + "'CAREERS LIKE '%" + item + "%'"
+                else:
+                    v_sql += (" OR " if v_sql else "") + v_tab_alias + ".CAREER_TYPE = '" + key + "' AND CAREERS LIKE '%" + item + "%'"
     if v_sql:
         v_sql += "   AND (" + v_sql + ")"
     return v_sql
@@ -59,7 +63,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += "       LEFT OUTER JOIN CNTR_AMOUNT F ON A.KEY = F.KEY\n"
     sql += "       LEFT OUTER JOIN CNTR_OTHER G ON A.KEY = G.KEY\n"
     sql += " WHERE 1=1\n"
-    srch_profile = v_search_dir["MODEL_PROFILE"]
+    srch_profile = v_search_dir["PROFILE"]
     sql += condition_add("A", srch_profile)
     srch_hobbynspec = v_search_dir["HOBBYNSPEC"]
     sql += condition_add("C", srch_hobbynspec)
@@ -67,9 +71,9 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += condition_career("D", srch_career)
     srch_contact = v_search_dir["CONTACT"]
     sql += condition_add("E", srch_contact)
-    srch_amount= v_search_dir["CNTR_AMOUNT"]
+    srch_amount= v_search_dir["CONTRACT"]
     sql += condition_add("F", srch_amount)
-    srch_other = v_search_dir["CNTR_OTHER"]
+    srch_other = v_search_dir["OTHER"]
     sql += condition_add("G", srch_other)
     sql += "       ) A\n"
     sql += " ORDER BY A.NAME\n"
@@ -102,10 +106,9 @@ def get_comboBox_list_a(v_combo_type):
         item_list, item_table_map, comboBox_dir = [], {}, {}
         for row in result:
             item_list.append(row[3])
-            item_table_map[row[3]] = row[0]
-            comboBox_dir[row[0]] = {row[3]: [row[2], row[4], {"s": [], "ge": "", "le": ""}]}
+            comboBox_dir[row[3]] = [row[2], row[4], {"s": [], "ge": "", "le": ""}]
             # 테이블명: { 항목명: [칼럼명, 연산자, 검색목록] }
-        return [item_list, item_table_map, comboBox_dir]
+        return [item_list, comboBox_dir]
     except cx_Oracle.DatabaseError as e:
         error, = e.args
         print(sql)
