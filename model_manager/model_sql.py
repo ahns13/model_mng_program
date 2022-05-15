@@ -176,7 +176,7 @@ def contact_ins(v_cls_model, v_key_value):
     ins_data = []
     model_data = v_cls_model.model_contact
     for idx, data in enumerate(model_data):
-        ins_data.append([idx, data[0], data[1], data[2], data[3], data[4], data[5], data[6]])
+        ins_data.append([idx+1, data[0], data[1], data[2], data[3], data[4], data[5], data[6]])
 
     sql_execute(True, sql, ins_data)
 
@@ -212,7 +212,7 @@ def contract_info_ins(v_cls_model, v_key_value):
     ins_data = []
     model_data = v_cls_model.model_contract_info
     for idx, data in enumerate(model_data):
-        ins_data.append([idx, data[0], data[1]])
+        ins_data.append([idx+1, data[0], data[1]])
 
     sql_execute(True, sql, ins_data)
 

@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1055</width>
+    <width>1304</width>
     <height>768</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>모델 관리 프로그램 v1.0</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTableWidget" name="tableWidget">
@@ -19,7 +19,7 @@
      <rect>
       <x>20</x>
       <y>200</y>
-      <width>978</width>
+      <width>1133</width>
       <height>471</height>
      </rect>
     </property>
@@ -133,7 +133,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QGroupBox" name="groupBox">
+   <widget class="QGroupBox" name="groupBox_profile">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -182,7 +182,7 @@
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_2">
+   <widget class="QGroupBox" name="groupBox_career">
     <property name="geometry">
      <rect>
       <x>266</x>
@@ -244,7 +244,7 @@
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;경력(CAREER)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QGroupBox" name="groupBox_3">
+   <widget class="QGroupBox" name="groupBox_contact">
     <property name="geometry">
      <rect>
       <x>511</x>
@@ -306,7 +306,7 @@
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;매니저/소속사&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QGroupBox" name="groupBox_4">
+   <widget class="QGroupBox" name="groupBox_contract">
     <property name="geometry">
      <rect>
       <x>756</x>
@@ -334,7 +334,7 @@
     <widget class="QPushButton" name="btn_contract">
      <property name="geometry">
       <rect>
-       <x>183</x>
+       <x>184</x>
        <y>9</y>
        <width>50</width>
        <height>24</height>
@@ -386,7 +386,7 @@
      <rect>
       <x>20</x>
       <y>90</y>
-      <width>977</width>
+      <width>1133</width>
       <height>61</height>
      </rect>
     </property>
@@ -407,6 +407,58 @@
      <string>초기화</string>
     </property>
    </widget>
+   <widget class="QGroupBox" name="groupBox_other">
+    <property name="geometry">
+     <rect>
+      <x>1001</x>
+      <y>40</y>
+      <width>152</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLineEdit" name="lineEdit_other">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>80</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_other">
+     <property name="geometry">
+      <rect>
+       <x>93</x>
+       <y>9</y>
+       <width>50</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>추가</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>1004</x>
+      <y>22</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;기타 정보&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -414,8 +466,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1055</width>
-     <height>26</height>
+     <width>1304</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
