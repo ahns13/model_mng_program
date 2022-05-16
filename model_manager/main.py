@@ -1,14 +1,26 @@
 import sys, math, os
 from PyQt5 import QtWidgets
-from PyQt5 import uic, QtCore
+from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import *
 import copy
 import win32com.client
 
 from model_sql_ui import *
-from program_info import access_root
 
 form_class = uic.loadUiType("./model_manage_main.ui")[0]
+
+
+class AlignDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super(AlignDelegate, self).initStyleOption(option, index)
+        option.displayAlignment = QtCore.Qt.AlignCenter
+
+
+class IconDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.decorationSize = QtCore.QSize(18, 18)  # option.rect.size()()
+        # option.displayAlignment = QtCore.Qt.AlignCenter
 
 
 class MainWindow(QMainWindow, form_class):
@@ -20,14 +32,24 @@ class MainWindow(QMainWindow, form_class):
         # tableWidget
         self.tableColCount = 8  # resultl data - total_cnt index
         self.tableColIndexRng = [0, 6]
-        self.tableWidget.setColumnWidth(0, 90)
-        self.tableWidget.setColumnWidth(1, 80)
-        self.tableWidget.setColumnWidth(2, 120)
+        self.tablePptFileColIndex = 6
+
+        self.tableWidget.setColumnWidth(0, 70)
+        self.tableWidget.setColumnWidth(1, 100)
+        self.tableWidget.setColumnWidth(2, 85)
         self.tableWidget.setColumnWidth(3, 120)
-        self.tableWidget.setColumnWidth(4, 80)
-        self.tableWidget.setColumnWidth(5, 130)
-        self.tableWidget.setColumnWidth(6, 180)
+        self.tableWidget.setColumnWidth(4, 120)
+        self.tableWidget.setColumnWidth(5, 80)
+        self.tableWidget.setColumnWidth(6, 130)
+        self.tableWidget.setColumnWidth(7, 180)
         self.tableWidget.clicked.connect(self.tableClickOpenFile)
+
+        cell_del = AlignDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegateForColumn(2, cell_del)
+
+        icon_del = IconDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegateForColumn(0, icon_del)
+
         self.ppt_application = win32com.client.Dispatch("PowerPoint.Application")
 
         self.noSearchMsg()
@@ -197,6 +219,15 @@ class MainWindow(QMainWindow, form_class):
             "OTHER": copy.deepcopy(self.combo_data_other[1])
         }
 
+    def tableInfoIcon(self):
+        # 상세정보 icon
+        icon_file = "desc_info.ico"
+        info_item = QtWidgets.QTableWidgetItem()
+        info_icon = QtGui.QIcon()
+        info_icon.addPixmap(QtGui.QPixmap(icon_file), QtGui.QIcon.Active, QtGui.QIcon.Off)
+        info_item.setIcon(info_icon)
+        return info_item
+
     def tableDataInit(self):
         self.tablePageNo = 0
         self.tableData = []
@@ -249,9 +280,10 @@ class MainWindow(QMainWindow, form_class):
         for m_idx, m_row in enumerate(v_model_data):
             self.tableWidget.insertRow(m_idx)
             self.tableWidget.setRowHeight(m_idx, 20)
+            self.tableWidget.setItem(m_idx, 0, self.tableInfoIcon())
             for r_idx, r_data in enumerate(m_row):
                 if self.tableColIndexRng[0] <= r_idx <= self.tableColIndexRng[1]:
-                    self.tableWidget.setItem(m_idx, r_idx, QTableWidgetItem(str(r_data if r_data else "")))
+                    self.tableWidget.setItem(m_idx, r_idx+1, QTableWidgetItem(str(r_data if r_data else "")))
 
     def noSearchMsg(self):  # 조회된 결과가 없을 때
         self.tableDataInit()
@@ -261,15 +293,15 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
 
     def tableClickOpenFile(self, item):
-        if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
-            try:
-                if item.column() == 5:
+        if item.column() == self.tablePptFileColIndex:
+            if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
+                try:
                     file_path = self.tableData[item.row()][7]
                     self.ppt_application.Presentations.Open(file_path)
-            except:
-                QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
-        else:
-            QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
+                except:
+                    QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
+            else:
+                QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
 
     def modelClickOpenWindow(self):
         model_window = ModelWindow()
@@ -278,7 +310,7 @@ class MainWindow(QMainWindow, form_class):
 
 class ModelWindow(QMainWindow):
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super(ModelWindow, self).__init__()
         uic.loadUiType("./model_info_window.ui", self)
         self.setupUi(self)
 
