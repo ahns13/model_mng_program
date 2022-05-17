@@ -52,11 +52,31 @@ def condition_career(v_tab_alias, v_srch_dir):
         return ""
 
 
+def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None):
+    try:
+        if v_exec_many:
+            v_cur_cursor.executemany(v_sql, v_ins_data)
+        elif v_ins_data:
+            v_cur_cursor.execute(v_sql, v_ins_data)
+        else:
+            v_cur_cursor.execute(v_sql)
+        return v_cur_cursor.fetchall()
+    except cx_Oracle.DatabaseError as e:
+        error, = e.args
+        print(v_sql)
+        print("error code : " + str(error.code))
+        print(error.message)
+        print(error.context)
+        v_cur_cursor.close()
+        conn.close()
+        sys.exit()
+
+
 def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     cursor = conn.cursor()
-    sql = "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.FOLDER_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT\n"
+    sql = "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.FOLDER_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT, A.KEY\n"
     sql += "  FROM (\n"
-    sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE, B.FOLDER_PATH\n"
+    sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE, B.FOLDER_PATH, A.KEY\n"
     sql += "  FROM MODEL_PROFILE A\n"
     sql += "       LEFT OUTER JOIN MODEL_INFO B ON A.KEY = B.KEY\n"
     sql += "       LEFT OUTER JOIN HOBBYNSPEC C ON A.KEY = C.KEY\n"
@@ -150,3 +170,21 @@ def get_comboBox_list_career():
         cursor.close()
         conn.close()
         sys.exit()
+
+
+# model 상세 정보
+def info_profile(v_key):
+    cursor = conn.cursor()
+    sql = "SELECT NAME, REAL_NAME, BIRTH_DATE, HEIGHT, WEIGHT, SIZE_TOP, SIZE_PANTS, SIZE_SHOE, SIZE_OTHER"
+    sql += "     , TEL, EMAIL, INSTA_ID, MODEL_DESC, DATA_DATE"
+    sql += "  FROM MODEL_PROFILE"
+    sql += " WHERE KEY = " + str(v_key)
+    result = sql_execute(cursor, False, sql)
+    columns = [d[0] for d in cursor.description]
+    dic_result = {columns[idx]: data for idx, data in enumerate(result[0])}
+    cursor.close()
+    return dic_result
+
+
+if __name__ == "__main__":
+    pass

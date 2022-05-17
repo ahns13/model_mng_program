@@ -18,29 +18,30 @@ class AlignDelegate(QtWidgets.QStyledItemDelegate):
 
 class IconDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
-        super().initStyleOption(option, index)
-        option.decorationSize = QtCore.QSize(18, 18)  # option.rect.size()()
-        # option.displayAlignment = QtCore.Qt.AlignCenter
+        super(IconDelegate, self).initStyleOption(option, index)
+        option.decorationSize = option.rect.size()
 
 
 class MainWindow(QMainWindow, form_class):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
-        self.model_form_class = None  # 모델 클릭 윈도우
 
         # tableWidget
         self.tableColCount = 8  # resultl data - total_cnt index
         self.tableColIndexRng = [0, 6]
-        self.tablePptFileColIndex = 6
+        self.tableClickIndex = {
+            "tablePptFileColIndex": 6,
+            "tableDetailInfoIndex": 0
+        }
 
-        self.tableWidget.setColumnWidth(0, 70)
+        self.tableWidget.setColumnWidth(0, 60)
         self.tableWidget.setColumnWidth(1, 100)
         self.tableWidget.setColumnWidth(2, 85)
         self.tableWidget.setColumnWidth(3, 120)
-        self.tableWidget.setColumnWidth(4, 120)
+        self.tableWidget.setColumnWidth(4, 150)
         self.tableWidget.setColumnWidth(5, 80)
-        self.tableWidget.setColumnWidth(6, 130)
+        self.tableWidget.setColumnWidth(6, 140)
         self.tableWidget.setColumnWidth(7, 180)
         self.tableWidget.clicked.connect(self.tableClickOpenFile)
 
@@ -207,8 +208,7 @@ class MainWindow(QMainWindow, form_class):
             self.search_input_count[v_del_search_type] -= 1
         self.noSearchMsg()
 
-    def searchDataMaker(self):
-        # 조회 sql에 전달할 검색 데이터
+    def searchDataMaker(self):  # 조회 sql에 전달할 검색 데이터
         profile_data = copy.deepcopy(self.combo_data_profile[1])
         self.combo_search_data = {
             "HOBBYNSPEC": {"취미/특기": profile_data.pop("취미/특기")},
@@ -219,16 +219,15 @@ class MainWindow(QMainWindow, form_class):
             "OTHER": copy.deepcopy(self.combo_data_other[1])
         }
 
-    def tableInfoIcon(self):
-        # 상세정보 icon
+    def tableInfoIcon(self):  # 상세정보 icon
         icon_file = "desc_info.ico"
         info_item = QtWidgets.QTableWidgetItem()
         info_icon = QtGui.QIcon()
-        info_icon.addPixmap(QtGui.QPixmap(icon_file), QtGui.QIcon.Active, QtGui.QIcon.Off)
+        info_icon.addPixmap(QtGui.QPixmap(icon_file).scaled(15, 17, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation), QtGui.QIcon.Active, QtGui.QIcon.Off)
         info_item.setIcon(info_icon)
         return info_item
 
-    def tableDataInit(self):
+    def tableDataInit(self):  # 테이블 정보 초기화
         self.tablePageNo = 0
         self.tableData = []
         self.modelDataLen = 0
@@ -293,7 +292,7 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
 
     def tableClickOpenFile(self, item):
-        if item.column() == self.tablePptFileColIndex:
+        if item.column() == self.tableClickIndex["tablePptFileColIndex"]:
             if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
                 try:
                     file_path = self.tableData[item.row()][7]
@@ -302,17 +301,30 @@ class MainWindow(QMainWindow, form_class):
                     QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
             else:
                 QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
+        elif item.column() == self.tableClickIndex["tableDetailInfoIndex"]:
+            self.modelClickOpenWindow(self.tableData[item.row()][9])
 
-    def modelClickOpenWindow(self):
-        model_window = ModelWindow()
-        model_window.show()
+    def modelClickOpenWindow(self, v_click_model_key):
+        model_window = ModelWindow(v_click_model_key)
+        model_window.exec_()
 
 
-class ModelWindow(QMainWindow):
-    def __init__(self):
+class ModelWindow(QtWidgets.QDialog):
+    def __init__(self, v_model_key):
         super(ModelWindow, self).__init__()
-        uic.loadUiType("./model_info_window.ui", self)
-        self.setupUi(self)
+        uic.loadUi("./model_info_window.ui", self)  # ui파알을 위젯에 할당할 때 loadUi
+        self.select_info_profile = info_profile(v_model_key)
+        print(self.select_info_profile)
+        self.lineEdit_profile_name.setText(self.noneChage(self.select_info_profile["NAME"]))
+        self.lineEdit_profile_realname.setText(self.noneChage(self.select_info_profile["REAL_NAME"]))
+        self.lineEdit_profile_birthDate.setText(self.noneChage(self.select_info_profile["BIRTH_DATE"]))
+        self.show()
+
+    def noneChage(self, v_value):
+        if v_value:
+            return v_value
+        else:
+            return ""
 
 
 if __name__ == "__main__":
