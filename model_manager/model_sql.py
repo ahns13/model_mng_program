@@ -121,8 +121,8 @@ def get_max_data(v_current_dir_route):
 def model_profile_ins(v_cls_model, v_key_value):
     sql = "INSERT INTO MODEL_PROFILE(KEY,NAME,REAL_NAME,MODEL_DESC,BIRTH_DATE,HEIGHT,WEIGHT,\n" \
           "SIZE_TOP,SIZE_PANTS,SIZE_SHOE,SIZE_OTHER,\n" \
-          "TEL,EMAIL,INSTA_ID,DATA_DATE,INSERT_DATE,INSERT_EMP,UPDATE_DATE,UPDATE_EMP) \n" \
-          "VALUES(" + str(v_key_value) + ", " + get_bind_cols(14) + " SYSDATE, 'admin', SYSDATE, 'admin')"
+          "TEL,EMAIL,INSTA_ID,DATA_DATE,INSERT_DATE,INSERT_EMP,UPDATE_DATE,UPDATE_EMP,FLAG) \n" \
+          "VALUES(" + str(v_key_value) + ", " + get_bind_cols(14) + " SYSDATE, 'admin', SYSDATE, 'admin', 0)"
 
     ins_data = [
         v_cls_model.model_profile["name"],

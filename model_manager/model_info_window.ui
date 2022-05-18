@@ -34,8 +34,8 @@
     <rect>
      <x>20</x>
      <y>20</y>
-     <width>241</width>
-     <height>631</height>
+     <width>255</width>
+     <height>661</height>
     </rect>
    </property>
    <property name="autoFillBackground">
@@ -53,7 +53,7 @@ border: 1px solid rgb(138, 135, 154);</string>
      <rect>
       <x>83</x>
       <y>507</y>
-      <width>139</width>
+      <width>123</width>
       <height>101</height>
      </rect>
     </property>
@@ -82,7 +82,7 @@ border: 1px solid rgb(138, 135, 154);</string>
      <rect>
       <x>6</x>
       <y>40</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -95,7 +95,7 @@ border: 1px solid rgb(138, 135, 154);</string>
     <widget class="QPushButton" name="btn_profile_name">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -136,7 +136,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -146,12 +146,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_realname">
+   <widget class="QGroupBox" name="groupBox_real_name">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>70</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -161,10 +161,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_realname">
+    <widget class="QPushButton" name="btn_profile_real_name">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -184,7 +184,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_realname">
+    <widget class="QLabel" name="label_profile_real_name">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -200,12 +200,12 @@ cursor: pointer;</string>
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;본    명&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_realname">
+    <widget class="QLineEdit" name="lineEdit_profile_real_name">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -215,12 +215,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_birthDate">
+   <widget class="QGroupBox" name="groupBox_birth_date">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>100</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -230,10 +230,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_birthDate">
+    <widget class="QPushButton" name="btn_profile_birth_date">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -253,7 +253,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_birthDate">
+    <widget class="QLabel" name="label_profile_birth_date">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -272,12 +272,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_birthDate">
+    <widget class="QLineEdit" name="lineEdit_profile_birth_date">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -292,7 +292,7 @@ border-radius: 5px;</string>
      <rect>
       <x>6</x>
       <y>130</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -305,7 +305,7 @@ border-radius: 5px;</string>
     <widget class="QPushButton" name="btn_profile_height">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -349,7 +349,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -364,7 +364,7 @@ border-radius: 5px;</string>
      <rect>
       <x>6</x>
       <y>160</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -377,7 +377,7 @@ border-radius: 5px;</string>
     <widget class="QPushButton" name="btn_profile_weight">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -421,7 +421,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -431,12 +431,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_topSize">
+   <widget class="QGroupBox" name="groupBox_size_top">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>190</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -446,10 +446,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_topSize">
+    <widget class="QPushButton" name="btn_profile_size_top">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -469,7 +469,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_topSize">
+    <widget class="QLabel" name="label_profile_size_top">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -488,12 +488,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_topSize">
+    <widget class="QLineEdit" name="lineEdit_profile_size_top">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -503,12 +503,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_patnsSize">
+   <widget class="QGroupBox" name="groupBox_size_pants">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>220</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -518,10 +518,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_patnsSize">
+    <widget class="QPushButton" name="btn_profile_size_pants">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -541,7 +541,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_patnsSize">
+    <widget class="QLabel" name="label_profile_size_pants">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -560,12 +560,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_patnsSize">
+    <widget class="QLineEdit" name="lineEdit_profile_size_pants">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -575,12 +575,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_shoeSize">
+   <widget class="QGroupBox" name="groupBox_size_shoe">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>250</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -590,10 +590,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_shoeSize">
+    <widget class="QPushButton" name="btn_profile_size_shoe">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -613,7 +613,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_shoeSize">
+    <widget class="QLabel" name="label_profile_size_shoe">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -632,12 +632,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_shoeSize">
+    <widget class="QLineEdit" name="lineEdit_profile_size_shoe">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -652,7 +652,7 @@ border-radius: 5px;</string>
      <rect>
       <x>6</x>
       <y>310</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -665,7 +665,7 @@ border-radius: 5px;</string>
     <widget class="QPushButton" name="btn_profile_tel">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -709,7 +709,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -724,7 +724,7 @@ border-radius: 5px;</string>
      <rect>
       <x>6</x>
       <y>340</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -737,7 +737,7 @@ border-radius: 5px;</string>
     <widget class="QPushButton" name="btn_profile_email">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -781,7 +781,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -791,12 +791,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_desc">
+   <widget class="QGroupBox" name="groupBox_model_desc">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>400</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -806,10 +806,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_desc">
+    <widget class="QPushButton" name="btn_profile_model_desc">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -829,7 +829,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_desc">
+    <widget class="QLabel" name="label_profile_model_desc">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -848,12 +848,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_desc">
+    <widget class="QLineEdit" name="lineEdit_profile_model_desc">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -863,12 +863,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_otherSize">
+   <widget class="QGroupBox" name="groupBox_size_other">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>280</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -878,10 +878,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_otherSize">
+    <widget class="QPushButton" name="btn_profile_size_other">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -901,7 +901,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_otherSize">
+    <widget class="QLabel" name="label_profile_size_other">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -920,12 +920,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_otherSize">
+    <widget class="QLineEdit" name="lineEdit_profile_size_other">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -935,12 +935,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_instaId">
+   <widget class="QGroupBox" name="groupBox_insta_id">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>370</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -950,10 +950,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_instaId">
+    <widget class="QPushButton" name="btn_profile_insta_id">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -973,7 +973,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_instaId">
+    <widget class="QLabel" name="label_profile_insta_id">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -992,12 +992,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_instaId">
+    <widget class="QLineEdit" name="lineEdit_profile_insta_id">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -1007,12 +1007,12 @@ border-radius: 5px;</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_modDate">
+   <widget class="QGroupBox" name="groupBox_data_date">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>430</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -1022,10 +1022,10 @@ border-radius: 5px;</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="btn_profile_modDate">
+    <widget class="QPushButton" name="btn_profile_data_date">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -1045,7 +1045,7 @@ cursor: pointer;</string>
       <string>+</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profile_modDate">
+    <widget class="QLabel" name="label_profile_data_date">
      <property name="geometry">
       <rect>
        <x>4</x>
@@ -1064,12 +1064,12 @@ cursor: pointer;</string>
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_profile_modDate">
+    <widget class="QLineEdit" name="lineEdit_profile_data_date">
      <property name="geometry">
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -1084,7 +1084,7 @@ border-radius: 5px;</string>
      <rect>
       <x>6</x>
       <y>470</y>
-      <width>230</width>
+      <width>240</width>
       <height>31</height>
      </rect>
     </property>
@@ -1097,7 +1097,7 @@ border-radius: 5px;</string>
     <widget class="QPushButton" name="btn_profile_hobbynspec">
      <property name="geometry">
       <rect>
-       <x>193</x>
+       <x>213</x>
        <y>4</y>
        <width>22</width>
        <height>22</height>
@@ -1141,7 +1141,7 @@ cursor: pointer;</string>
       <rect>
        <x>79</x>
        <y>4</y>
-       <width>105</width>
+       <width>120</width>
        <height>22</height>
       </rect>
      </property>
@@ -1150,6 +1150,30 @@ cursor: pointer;</string>
 border-radius: 5px;</string>
      </property>
     </widget>
+   </widget>
+   <widget class="QPushButton" name="btn_profile_all_save">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>620</y>
+      <width>85</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 13px;
+font-weight: bold;
+background-color: rgb(28, 47, 154);
+color: white;
+border-radius: 5px;
+cursor: pointer;</string>
+    </property>
+    <property name="text">
+     <string>일괄 반영</string>
+    </property>
    </widget>
   </widget>
  </widget>

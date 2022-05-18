@@ -306,25 +306,85 @@ class MainWindow(QMainWindow, form_class):
 
     def modelClickOpenWindow(self, v_click_model_key):
         model_window = ModelWindow(v_click_model_key)
+        model_window.setStyleSheet(info_style)
         model_window.exec_()
+
+    def closeEvent(self, event):
+        for window in QApplication.topLevelWidgets():
+            window.close()
 
 
 class ModelWindow(QtWidgets.QDialog):
     def __init__(self, v_model_key):
         super(ModelWindow, self).__init__()
         uic.loadUi("./model_info_window.ui", self)  # ui파알을 위젯에 할당할 때 loadUi
-        self.select_info_profile = info_profile(v_model_key)
-        print(self.select_info_profile)
-        self.lineEdit_profile_name.setText(self.noneChage(self.select_info_profile["NAME"]))
-        self.lineEdit_profile_realname.setText(self.noneChage(self.select_info_profile["REAL_NAME"]))
-        self.lineEdit_profile_birthDate.setText(self.noneChage(self.select_info_profile["BIRTH_DATE"]))
+        self.select_key = v_model_key
+
+        profile_data = info_profile(v_model_key)
+        self.flag_status = flagStatus(self.select_key, 1)  # status[1: 점유, 0: 해제]
+        print('flag: ', self.flag_status)
+        if not self.flag_status:
+            QMessageBox.about(self, "알림", "다른 사용자가 모델 데이터를 작업 중입니다. 변경 내용이 있을 수 있으니 해당 사용자 작업 종료 후 다시 창을 여십시오. 조회만 가능합니다.")
+        # [data_original, data_change]
+        self.select_info_profile = [profile_data[0], copy.deepcopy(profile_data[0])]
+        self.select_info_profile_hobbynspec = [profile_data[1], copy.deepcopy(profile_data[1])]
+        for edit_key in self.select_info_profile[0].keys():
+            cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
+            cur_lineEdit.setText(self.select_info_profile[0][edit_key])
+
+            cur_btn = getattr(self, "btn_profile_" + edit_key)
+            cur_btn.clicked.connect(lambda checked, p_edit_key=edit_key: self.profileSave(p_edit_key))
+
+        self.list_hobbynspec.addItems([d[1] for d in self.select_info_profile_hobbynspec[0]])
+        self.btn_profile_hobbynspec.clicked.connect(lambda: self.profileSave("hobbynspec"))
+        self.btn_profile_all_save.clicked.connect(lambda: self.profileSave(""))
+
         self.show()
 
-    def noneChage(self, v_value):
-        if v_value:
-            return v_value
+    def profileSave(self, v_type):
+        try:
+            if self.flag_status:
+                if v_type == "hobbynspec":
+                    edit_text = self.lineEdit_profile_hobbynspec.text()
+                    self.updateExec(updateHobbynspec(self.select_key, "INSERT", edit_text), len(edit_text))
+                else:
+                    original_data = self.select_info_profile[0]
+                    for edit_key in original_data.keys():
+                        if not v_type or edit_key == v_type :
+                            cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
+                            self.select_info_profile[1][edit_key] = cur_lineEdit.text()
+                    change_data = self.select_info_profile[1]
+
+                    update_items = []
+                    for edit_key in change_data.keys():
+                        if not v_type or edit_key == v_type:
+                            input_value = change_data[edit_key].replace(" ", "")
+                            if len(input_value):
+                                if change_data[edit_key] != original_data[edit_key]:
+                                    update_items.append([edit_key, change_data[edit_key]])
+
+                    self.updateExec(updateProfile(self.select_key, update_items), len(update_items))
+            else:
+                QMessageBox.about(self, "알림", "다른 사용자가 모델 데이터를 작업 중이니 해당 사용자의 작업 종료 후 다시 창을 여십시오.")
+        except Exception as e:
+            print(e)
+
+    def updateExec(self, fn_sql, v_len_items):
+        if v_len_items:
+            QMessageBox.about(self, "알림", "저장 완료") if fn_sql else QMessageBox.about(self, "알림", "저장 실패")
         else:
-            return ""
+            QMessageBox.about(self, "알림", "변경된 데이터가 없습니다.")
+
+    def closeEvent(self, event):
+        flagStatus(self.select_key, 0)
+
+
+# --- info window stylesheet --- #
+info_style = """ 
+    QLineEdit {
+        font: 11px;
+    }
+"""
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ def condition_career(v_tab_alias, v_srch_dir):
         return ""
 
 
-def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None):
+def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None, v_execute_only=False):
     try:
         if v_exec_many:
             v_cur_cursor.executemany(v_sql, v_ins_data)
@@ -60,7 +60,8 @@ def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None):
             v_cur_cursor.execute(v_sql, v_ins_data)
         else:
             v_cur_cursor.execute(v_sql)
-        return v_cur_cursor.fetchall()
+        if not v_execute_only:
+            return v_cur_cursor.fetchall()
     except cx_Oracle.DatabaseError as e:
         error, = e.args
         print(v_sql)
@@ -101,20 +102,9 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += " ORDER BY A.NAME\n"
     sql += "OFFSET " + str(v_page_size) + "*(" + str(v_page_no) + "-1) ROWS\n"
     sql += " FETCH NEXT " + str(v_page_size) + " ROWS ONLY"
-    try:
-        cursor.execute(sql)
-        result = cursor.fetchall()
-        cursor.close()
-        return result
-    except cx_Oracle.DatabaseError as e:
-        error, = e.args
-        print(sql)
-        print("error code : " + str(error.code))
-        print(error.message)
-        print(error.context)
-        cursor.close()
-        conn.close()
-        sys.exit()
+    result = sql_execute(cursor, False, sql)
+    cursor.close()
+    return result
 
 
 def get_comboBox_list_a(v_combo_type):
@@ -172,18 +162,71 @@ def get_comboBox_list_career():
         sys.exit()
 
 
+def flagStatus(v_key, v_status):
+    cursor = conn.cursor()
+    sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = " + str(v_key)
+    result = sql_execute(cursor, False, sql)
+
+    if result[0][0] == v_status:
+        cursor.close()
+        return 0
+    else:
+        sql = "BEGIN SP_FLAG_STATUS("+str(v_key)+", "+str(v_status)+"); END;"
+        sql_execute(cursor, False, sql, "", True)
+        cursor.close()
+        if result[0][0] == 0 and v_status == 1:
+            return 1
+
+
 # model 상세 정보
 def info_profile(v_key):
     cursor = conn.cursor()
-    sql = "SELECT NAME, REAL_NAME, BIRTH_DATE, HEIGHT, WEIGHT, SIZE_TOP, SIZE_PANTS, SIZE_SHOE, SIZE_OTHER"
-    sql += "     , TEL, EMAIL, INSTA_ID, MODEL_DESC, DATA_DATE"
-    sql += "  FROM MODEL_PROFILE"
+    sql = "SELECT name, real_name, birth_date, height, weight, size_top, size_pants, size_shoe, size_other\n"
+    sql += "     , tel, email, insta_id, model_desc, data_date\n"
+    sql += "  FROM MODEL_PROFILE\n"
     sql += " WHERE KEY = " + str(v_key)
     result = sql_execute(cursor, False, sql)
-    columns = [d[0] for d in cursor.description]
-    dic_result = {columns[idx]: data for idx, data in enumerate(result[0])}
+    columns = [d[0].lower() for d in cursor.description]  # 칼럼명은 대문자로 입력됨
+    result_profile = {columns[idx]: (str(data) if data is not None or data == "None" else "") for idx, data in enumerate(result[0])}
+
+    sql = "SELECT no, nvl(hobbynspec, '''') as hobbynspec\n"
+    sql += "  FROM HOBBYNSPEC\n"
+    sql += " WHERE KEY = " + str(v_key)
+    sql += " ORDER BY no"
+    result_hobbynspec = sql_execute(cursor, False, sql)
+
     cursor.close()
-    return dic_result
+    return [result_profile, result_hobbynspec]
+
+
+def updateProfile(v_key, v_change_list):
+    cursor = conn.cursor()
+    sql = "UPDATE MODEL_PROFILE\n"
+    sql += "  SET "
+    for data in v_change_list:
+        sql += data[0] + " = '" + str(data[1]) + "'\n"
+    sql += " WHERE KEY = " + str(v_key) + "\n"
+    sql_execute(cursor, False, sql, "", True)
+    cursor.close()
+    conn.commit()
+    return True
+
+
+def updateHobbynspec(v_key, v_mod_type, v_change_value):
+    cursor = conn.cursor()
+    returnVal = ""
+    if v_mod_type == "INSERT":
+        sql = "INSERT INTO HOBBYNSPEC VALUES\n"
+        sql += "("+str(v_key)+",(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = "+str(v_key)+"),'"+v_change_value+"',SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, False, sql, "", True)
+        returnVal = "저장되었습니다."
+    elif v_mod_type == "DELETE":
+        sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_key) + " AND NO = " + str(v_change_value)
+        sql_execute(cursor, False, sql, "", True)
+        returnVal = "삭제되었습니다."
+    cursor.close()
+    conn.commit()
+    return returnVal
 
 
 if __name__ == "__main__":
