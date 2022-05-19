@@ -52,15 +52,16 @@ def condition_career(v_tab_alias, v_srch_dir):
         return ""
 
 
-def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None, v_execute_only=False):
+def sql_execute(v_cur_cursor, v_sql, **kwargs):
+    # ins_data = None, execute_only = False, key = None
     try:
-        if v_exec_many:
-            v_cur_cursor.executemany(v_sql, v_ins_data)
-        elif v_ins_data:
-            v_cur_cursor.execute(v_sql, v_ins_data)
+        if "execute_many" in kwargs and kwargs["execute_maney"]:
+            v_cur_cursor.executemany(v_sql, kwargs["ins_data"])
+        elif "ins_data" in kwargs:
+            v_cur_cursor.execute(v_sql, kwargs["ins_data"])
         else:
             v_cur_cursor.execute(v_sql)
-        if not v_execute_only:
+        if not kwargs or ("execute_only" in kwargs and not kwargs["execute_only"]):
             return v_cur_cursor.fetchall()
     except cx_Oracle.DatabaseError as e:
         error, = e.args
@@ -68,6 +69,8 @@ def sql_execute(v_cur_cursor, v_exec_many, v_sql, v_ins_data=None, v_execute_onl
         print("error code : " + str(error.code))
         print(error.message)
         print(error.context)
+        if kwargs and "key" in kwargs:
+            flagStatus(kwargs["key"], 0)  # 점유중인 데이터를 해제
         v_cur_cursor.close()
         conn.close()
         sys.exit()
@@ -102,7 +105,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += " ORDER BY A.NAME\n"
     sql += "OFFSET " + str(v_page_size) + "*(" + str(v_page_no) + "-1) ROWS\n"
     sql += " FETCH NEXT " + str(v_page_size) + " ROWS ONLY"
-    result = sql_execute(cursor, False, sql)
+    result = sql_execute(cursor, sql)
     cursor.close()
     return result
 
@@ -165,14 +168,14 @@ def get_comboBox_list_career():
 def flagStatus(v_key, v_status):
     cursor = conn.cursor()
     sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = " + str(v_key)
-    result = sql_execute(cursor, False, sql)
+    result = sql_execute(cursor, sql)
 
     if result[0][0] == v_status:
         cursor.close()
         return 0
     else:
         sql = "BEGIN SP_FLAG_STATUS("+str(v_key)+", "+str(v_status)+"); END;"
-        sql_execute(cursor, False, sql, "", True)
+        sql_execute(cursor, sql, execute_only=True)
         cursor.close()
         if result[0][0] == 0 and v_status == 1:
             return 1
@@ -185,7 +188,7 @@ def info_profile(v_key):
     sql += "     , tel, email, insta_id, model_desc, data_date\n"
     sql += "  FROM MODEL_PROFILE\n"
     sql += " WHERE KEY = " + str(v_key)
-    result = sql_execute(cursor, False, sql)
+    result = sql_execute(cursor, sql)
     columns = [d[0].lower() for d in cursor.description]  # 칼럼명은 대문자로 입력됨
     result_profile = {columns[idx]: (str(data) if data is not None or data == "None" else "") for idx, data in enumerate(result[0])}
 
@@ -193,36 +196,43 @@ def info_profile(v_key):
     sql += "  FROM HOBBYNSPEC\n"
     sql += " WHERE KEY = " + str(v_key)
     sql += " ORDER BY no"
-    result_hobbynspec = sql_execute(cursor, False, sql)
-
+    result_hobbynspec = sql_execute(cursor, sql)
     cursor.close()
     return [result_profile, result_hobbynspec]
 
 
-def updateProfile(v_key, v_change_list):
+def updateProfile(v_update_tuple):
+    """
+    v_update_tuple[key, update_value]
+    """
     cursor = conn.cursor()
     sql = "UPDATE MODEL_PROFILE\n"
     sql += "  SET "
-    for data in v_change_list:
-        sql += data[0] + " = '" + str(data[1]) + "'\n"
-    sql += " WHERE KEY = " + str(v_key) + "\n"
-    sql_execute(cursor, False, sql, "", True)
+    for idx, data in enumerate(v_update_tuple[1]):
+        sql += ("     , " if idx else "") + data[0] + " = '" + str(data[1]) + "'\n"
+    sql += " WHERE KEY = " + str(v_update_tuple[0]) + "\n"
+    sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
+    print(sql)
     cursor.close()
     conn.commit()
     return True
 
 
-def updateHobbynspec(v_key, v_mod_type, v_change_value):
+def updateHobbynspec(v_update_tuple):
+    """
+    v_update_tuple[key, mod_type, insert_value]
+    mod_type: INSERT/DELETE
+    """
     cursor = conn.cursor()
     returnVal = ""
-    if v_mod_type == "INSERT":
+    if v_update_tuple[1] == "INSERT":
         sql = "INSERT INTO HOBBYNSPEC VALUES\n"
-        sql += "("+str(v_key)+",(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = "+str(v_key)+"),'"+v_change_value+"',SYSDATE,'admin',SYSDATE,'admin')"
-        sql_execute(cursor, False, sql, "", True)
+        sql += "("+str(v_update_tuple[0])+",(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = "+str(v_update_tuple[0])+"),'"+v_update_tuple[2]+"',SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
         returnVal = "저장되었습니다."
-    elif v_mod_type == "DELETE":
-        sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_key) + " AND NO = " + str(v_change_value)
-        sql_execute(cursor, False, sql, "", True)
+    elif v_update_tuple[1] == "DELETE":
+        sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_update_tuple[0]) + " AND NO = " + str(v_update_tuple[2])
+        sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
         returnVal = "삭제되었습니다."
     cursor.close()
     conn.commit()

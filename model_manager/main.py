@@ -9,7 +9,6 @@ from model_sql_ui import *
 
 form_class = uic.loadUiType("./model_manage_main.ui")[0]
 
-
 class AlignDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(AlignDelegate, self).initStyleOption(option, index)
@@ -20,6 +19,12 @@ class IconDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(IconDelegate, self).initStyleOption(option, index)
         option.decorationSize = option.rect.size()
+
+
+class ListItemDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super(ListItemDelegate, self).initStyleOption(option, index)
+        option.font.setPixelSize(11)
 
 
 class MainWindow(QMainWindow, form_class):
@@ -45,11 +50,11 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.setColumnWidth(7, 180)
         self.tableWidget.clicked.connect(self.tableClickOpenFile)
 
-        cell_del = AlignDelegate(self.tableWidget)
-        self.tableWidget.setItemDelegateForColumn(2, cell_del)
+        cell_delegate = AlignDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegateForColumn(2, cell_delegate)
 
-        icon_del = IconDelegate(self.tableWidget)
-        self.tableWidget.setItemDelegateForColumn(0, icon_del)
+        icon_delegate = IconDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegateForColumn(0, icon_delegate)
 
         self.ppt_application = win32com.client.Dispatch("PowerPoint.Application")
 
@@ -310,6 +315,7 @@ class MainWindow(QMainWindow, form_class):
         model_window.exec_()
 
     def closeEvent(self, event):
+        conn.close()
         for window in QApplication.topLevelWidgets():
             window.close()
 
@@ -322,12 +328,14 @@ class ModelWindow(QtWidgets.QDialog):
 
         profile_data = info_profile(v_model_key)
         self.flag_status = flagStatus(self.select_key, 1)  # status[1: 점유, 0: 해제]
-        print('flag: ', self.flag_status)
+
         if not self.flag_status:
-            QMessageBox.about(self, "알림", "다른 사용자가 모델 데이터를 작업 중입니다. 변경 내용이 있을 수 있으니 해당 사용자 작업 종료 후 다시 창을 여십시오. 조회만 가능합니다.")
+            QMessageBox.about(self, "알림", "다른 사용자가 모델 데이터를 작업 중입니다.\n변경 내용이 있을 수 있으니 해당 사용자 작업 종료 후 다시 창을 여십시오.\n조회만 가능합니다.")
         # [data_original, data_change]
         self.select_info_profile = [profile_data[0], copy.deepcopy(profile_data[0])]
         self.select_info_profile_hobbynspec = [profile_data[1], copy.deepcopy(profile_data[1])]
+
+        # model_profile
         for edit_key in self.select_info_profile[0].keys():
             cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
             cur_lineEdit.setText(self.select_info_profile[0][edit_key])
@@ -335,7 +343,32 @@ class ModelWindow(QtWidgets.QDialog):
             cur_btn = getattr(self, "btn_profile_" + edit_key)
             cur_btn.clicked.connect(lambda checked, p_edit_key=edit_key: self.profileSave(p_edit_key))
 
-        self.list_hobbynspec.addItems([d[1] for d in self.select_info_profile_hobbynspec[0]])
+        # model_profile - hobbynspec
+        for data in self.select_info_profile_hobbynspec[0]:
+            print(data)
+            listItem = QListWidgetItem()
+            print('a')
+
+            cWidget = QWidget()
+            print('a0')
+            layout = QHBoxLayout()
+            print('a1')
+            # layout.addWidget(QLabel(data[1]))
+            print('a2')
+            layout.addWidget(QPushButton("X").resize(40, 20))
+            print('a3')
+            cWidget.setLayout(layout)
+            print('a4')
+
+            self.list_hobbynspec.addItem(listItem)
+            print('a5')
+            self.list_hobbynspec.setItemWidget(listItem, cWidget)
+            print('a6')
+
+        # self.list_hobbynspec.addItems([d[1] for d in self.select_info_profile_hobbynspec[0]])
+        listItem_delegate = ListItemDelegate(self.list_hobbynspec)
+        self.list_hobbynspec.setItemDelegateForColumn(0, listItem_delegate)
+
         self.btn_profile_hobbynspec.clicked.connect(lambda: self.profileSave("hobbynspec"))
         self.btn_profile_all_save.clicked.connect(lambda: self.profileSave(""))
 
@@ -346,7 +379,8 @@ class ModelWindow(QtWidgets.QDialog):
             if self.flag_status:
                 if v_type == "hobbynspec":
                     edit_text = self.lineEdit_profile_hobbynspec.text()
-                    self.updateExec(updateHobbynspec(self.select_key, "INSERT", edit_text), len(edit_text))
+                    self.updateExec(updateHobbynspec, len(edit_text), self.select_key, "INSERT", edit_text)
+                    self.list_hobbynspec.addItem(edit_text)
                 else:
                     original_data = self.select_info_profile[0]
                     for edit_key in original_data.keys():
@@ -358,22 +392,30 @@ class ModelWindow(QtWidgets.QDialog):
                     update_items = []
                     for edit_key in change_data.keys():
                         if not v_type or edit_key == v_type:
-                            input_value = change_data[edit_key].replace(" ", "")
-                            if len(input_value):
-                                if change_data[edit_key] != original_data[edit_key]:
-                                    update_items.append([edit_key, change_data[edit_key]])
+                            if change_data[edit_key] != original_data[edit_key]:
+                                update_items.append([edit_key, change_data[edit_key]])
 
-                    self.updateExec(updateProfile(self.select_key, update_items), len(update_items))
+                    if self.updateExec(updateProfile, len(update_items), self.select_key, update_items):
+                        for items in update_items:
+                            original_data[items[0]] = items[1]
             else:
                 QMessageBox.about(self, "알림", "다른 사용자가 모델 데이터를 작업 중이니 해당 사용자의 작업 종료 후 다시 창을 여십시오.")
         except Exception as e:
             print(e)
 
-    def updateExec(self, fn_sql, v_len_items):
+    def updateExec(self, fn_sql, v_len_items, *fn_param):
+        msgBox = QMessageBox()
         if v_len_items:
-            QMessageBox.about(self, "알림", "저장 완료") if fn_sql else QMessageBox.about(self, "알림", "저장 실패")
+            msgBox.resize(QtCore.QSize(200, 100))
+            if fn_sql(fn_param):
+                msgBox.about(self, "알림", "저장 완료")
+                return True
+            else:
+                msgBox.about(self, "알림", "저장 실패")
+                return False
         else:
-            QMessageBox.about(self, "알림", "변경된 데이터가 없습니다.")
+            msgBox.about(self, "알림", "변경된 데이터가 없습니다.")
+            return False
 
     def closeEvent(self, event):
         flagStatus(self.select_key, 0)
@@ -385,7 +427,16 @@ info_style = """
         font: 11px;
     }
 """
-
+list_item_style = """
+    QListWidget::item {
+        font: 8px;
+        height: 16px;
+    }
+    QListWidget::item:selected {
+        font-weight: bold;
+        background-color: blue;
+    }
+"""
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

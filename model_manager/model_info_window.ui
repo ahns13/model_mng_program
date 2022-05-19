@@ -58,7 +58,7 @@ border: 1px solid rgb(138, 135, 154);</string>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(243, 243, 243);</string>
+     <string notr="true">background-color: rgb(250, 250, 250);</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_profile_title">
