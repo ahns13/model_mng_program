@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -72,6 +72,8 @@ def sql_execute(v_cur_cursor, v_sql, **kwargs):
         if kwargs and "key" in kwargs:
             flagStatus(kwargs["key"], 0)  # 점유중인 데이터를 해제
         v_cur_cursor.close()
+        if kwargs and "er_rollback" in kwargs:
+            conn.rollback()
         conn.close()
         sys.exit()
 
@@ -211,10 +213,8 @@ def updateProfile(v_update_tuple):
     for idx, data in enumerate(v_update_tuple[1]):
         sql += ("     , " if idx else "") + data[0] + " = '" + str(data[1]) + "'\n"
     sql += " WHERE KEY = " + str(v_update_tuple[0]) + "\n"
-    sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
-    print(sql)
+    sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
     cursor.close()
-    conn.commit()
     return True
 
 
@@ -224,19 +224,16 @@ def updateHobbynspec(v_update_tuple):
     mod_type: INSERT/DELETE
     """
     cursor = conn.cursor()
-    returnVal = ""
     if v_update_tuple[1] == "INSERT":
         sql = "INSERT INTO HOBBYNSPEC VALUES\n"
         sql += "("+str(v_update_tuple[0])+",(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = "+str(v_update_tuple[0])+"),'"+v_update_tuple[2]+"',SYSDATE,'admin',SYSDATE,'admin')"
-        sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
-        returnVal = "저장되었습니다."
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
     elif v_update_tuple[1] == "DELETE":
         sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_update_tuple[0]) + " AND NO = " + str(v_update_tuple[2])
-        sql_execute(cursor, sql, execute_only=True, key=v_update_tuple[0])
-        returnVal = "삭제되었습니다."
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
+    print(sql)
     cursor.close()
-    conn.commit()
-    return returnVal
+    return True
 
 
 if __name__ == "__main__":
