@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -61,7 +61,7 @@ def sql_execute(v_cur_cursor, v_sql, **kwargs):
             v_cur_cursor.execute(v_sql, kwargs["ins_data"])
         else:
             v_cur_cursor.execute(v_sql)
-        if not kwargs or ("execute_only" in kwargs and not kwargs["execute_only"]):
+        if "execute_only" in kwargs and not kwargs["execute_only"]:
             return v_cur_cursor.fetchall()
     except cx_Oracle.DatabaseError as e:
         error, = e.args
@@ -107,7 +107,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += " ORDER BY A.NAME\n"
     sql += "OFFSET " + str(v_page_size) + "*(" + str(v_page_no) + "-1) ROWS\n"
     sql += " FETCH NEXT " + str(v_page_size) + " ROWS ONLY"
-    result = sql_execute(cursor, sql)
+    result = sql_execute(cursor, sql, execute_only=False)
     cursor.close()
     return result
 
@@ -170,7 +170,7 @@ def get_comboBox_list_career():
 def flagStatus(v_key, v_status):
     cursor = conn.cursor()
     sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = " + str(v_key)
-    result = sql_execute(cursor, sql)
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
 
     if result[0][0] == v_status:
         cursor.close()
@@ -190,15 +190,15 @@ def info_profile(v_key):
     sql += "     , tel, email, insta_id, model_desc, data_date\n"
     sql += "  FROM MODEL_PROFILE\n"
     sql += " WHERE KEY = " + str(v_key)
-    result = sql_execute(cursor, sql)
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
     columns = [d[0].lower() for d in cursor.description]  # 칼럼명은 대문자로 입력됨
     result_profile = {columns[idx]: (str(data) if data is not None or data == "None" else "") for idx, data in enumerate(result[0])}
 
-    sql = "SELECT no, nvl(hobbynspec, '''') as hobbynspec\n"
+    sql = "SELECT no, nvl(hobbynspec, '') as hobbynspec\n"
     sql += "  FROM HOBBYNSPEC\n"
     sql += " WHERE KEY = " + str(v_key)
     sql += " ORDER BY no"
-    result_hobbynspec = sql_execute(cursor, sql)
+    result_hobbynspec = sql_execute(cursor, sql, execute_only=False, key=v_key)
     cursor.close()
     return [result_profile, result_hobbynspec]
 
@@ -231,7 +231,46 @@ def updateHobbynspec(v_update_tuple):
     elif v_update_tuple[1] == "DELETE":
         sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_update_tuple[0]) + " AND NO = " + str(v_update_tuple[2])
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
-    print(sql)
+    cursor.close()
+    return True
+
+
+def info_career(v_key):
+    cursor = conn.cursor()
+    sql = "SELECT a.career_type, a.no, case when a.detail_gubun = '해당없음' then null else a.detail_gubun||'-' end||a.careers as careers\n"
+    sql += "  FROM CAREER A, COMBO_MAP_LIST B\n"
+    sql += " WHERE A.CAREER_TYPE = B.COL_NAME\n"
+    sql += "   AND A.KEY = " + str(v_key)
+    sql += "   AND B.COMBO_TYPE = 'CAREER'\n"
+    sql += " ORDER BY B.SORT_ORDER, A.NO"
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
+    cursor.close()
+    career_result = {}
+    for row in result:
+        if row[0] not in career_result:
+            career_result[row[0]] = {}
+        career_result[row[0]][row[1]] = row[2]
+    return career_result
+
+
+def updateCareer(v_update_tuple):
+    """
+    v_update_tuple[mod_type, key, career_type, detail_gubun, no, insert_value]
+    mod_type: INSERT/DELETE
+    """
+    cursor = conn.cursor()
+    if v_update_tuple[1] == "INSERT":
+        sql = "INSERT INTO CAREER VALUES\n"
+        sql += "(:1, :2, :3," + \
+               "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" \
+               " WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3), :4, SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:4]+[v_update_tuple[5]])
+    elif v_update_tuple[1] == "UPDATE":
+        sql = "UPDATE CAREER SET CAREERS = :5 WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3 AND NO = :4"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:])
+    elif v_update_tuple[1] == "DELETE":
+        sql = "DELETE CAREER WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3 AND NO = :4"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:5])
     cursor.close()
     return True
 

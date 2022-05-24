@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import *
 from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career
 from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy
 from window_info import ModelWindow
+from model_functions import *
 
 form_class = uic.loadUiType("./model_manage_main.ui")[0]
 
@@ -104,10 +105,10 @@ class MainWindow(QMainWindow, form_class):
         self.combo_contact.addItems(self.combo_data_contact[0])
         self.combo_contract.addItems(self.combo_data_contract[0])
 
-        self.comboStyleCss(self.combo_profile, "90")
-        self.comboStyleCss(self.combo_career, "120")
-        self.comboStyleCss(self.combo_contact, "120")
-        self.comboStyleCss(self.combo_contract, "90")
+        comboStyleCss(self.combo_profile, "90")
+        comboStyleCss(self.combo_career, "120")
+        comboStyleCss(self.combo_contact, "120")
+        comboStyleCss(self.combo_contract, "90")
 
         for s_type in self.search_types:
             btn_obj = getattr(self, "btn_" + s_type)
@@ -130,16 +131,7 @@ class MainWindow(QMainWindow, form_class):
 
         self.show()
 
-    def comboStyleCss(self, obj_comboBox, v_list_width):
-        # 검색 콤보박스 드랍다운 박스 스타일
-        obj_comboBox.setStyleSheet("""
-            QComboBox QAbstractItemView { min-width: """+v_list_width+"""px; }
-            QComboBox QAbstractItemView::item { min-height: 12px; }
-            QListView::item:selected { font: bold large; color: blue; background-color: #ebe6df; min-width: 1000px; }"
-            """)
-
     def buttonStyleCss(self, obj_button, v_rgb_color):
-        # 검색 콤보박스 드랍다운 박스 스타일
         obj_button.setStyleSheet("""
             font-weight: bold;
             color: """ + v_rgb_color + """;
@@ -315,7 +307,6 @@ class MainWindow(QMainWindow, form_class):
 
     def modelClickOpenWindow(self, v_click_model_key):
         model_window = ModelWindow(v_click_model_key)
-        model_window.setStyleSheet(info_style)
         model_window.exec_()
 
     def closeEvent(self, event):
@@ -323,9 +314,6 @@ class MainWindow(QMainWindow, form_class):
             window.close()
         conn.close()
 
-
-# --- info window stylesheet --- #
-info_style = "QLineEdit { font: 11px; }"
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
