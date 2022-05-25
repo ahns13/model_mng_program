@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -277,7 +277,7 @@ def updateCareer(v_update_tuple):
               " WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun), :careers, SYSDATE,'admin',SYSDATE,'admin')"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
     elif v_update_tuple[0] == "UPDATE":
-        sql = "UPDATE CAREER SET CAREERS = :5 WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
+        sql = "UPDATE CAREER SET CAREERS = :careers WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CAREER WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"

@@ -12,7 +12,7 @@ from model_functions import *
 class CareerDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(CareerDelegate, self).initStyleOption(option, index)
-        option.font.setPixelSize(12)
+        option.font.setPixelSize(10)
 
         if index.column() == 3:
             option.displayAlignment = QtCore.Qt.AlignCenter
@@ -77,21 +77,22 @@ class ModelWindow(QtWidgets.QDialog):
             self.btn_career_update.clicked.connect(lambda: self.careerDataExec("UPDATE"))
             self.btn_career_delete.clicked.connect(lambda: self.careerDataExec("DELETE"))
 
-            self.tableWidget_career.setColumnWidth(0, 30)
-            self.tableWidget_career.setColumnWidth(1, 65)
+            self.tableWidget_career.setColumnWidth(0, 27)
+            self.tableWidget_career.setColumnWidth(1, 63)
             self.tableWidget_career.setColumnWidth(2, 70)
-            self.tableWidget_career.setColumnWidth(3, 40)
-            self.tableWidget_career.setColumnWidth(4, 120)
+            self.tableWidget_career.setColumnWidth(3, 35)
+            self.tableWidget_career.setColumnWidth(4, 115)
             self.careerTableColCount = 3
             self.careerTable()
 
-            self.tableWidget_career.horizontalHeader().setFont(QtGui.QFont("", 7))
+            self.tableWidget_career.horizontalHeader().setFont(QtGui.QFont("", 9))
             self.tableWidget_career.verticalHeader().setVisible(False)
             self.tableWidget_career.setWordWrap(False)
             self.tableWidget_career.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             career_delegate = CareerDelegate(self.tableWidget_career)
             self.tableWidget_career.setItemDelegate(career_delegate)
+
             self.tableWidget_career.itemChanged.connect(self.tableCellEdited)
         except Exception as e:
             QMessageBox.critical(self, "Error", e.args[0])
@@ -230,34 +231,37 @@ class ModelWindow(QtWidgets.QDialog):
         career_data = info_career(self.select_key)
 
         if career_data:
-            self.career_table_cols = career_data[0]
-            self.select_info_career = career_data[1]
-            self.tableWidget_career.setRowCount(0)
+            try:
+                self.career_table_cols = career_data[0]
+                self.select_info_career = career_data[1]
 
-            career_data_mod = []
-            for key_type in self.select_info_career.keys():
-                career_type_data = self.select_info_career[key_type]
-                for key_detail in career_type_data.keys():
-                    career_detail_data = career_type_data[key_detail]
-                    for key_no in career_detail_data.keys():
-                        career_data_mod.append([key_type, key_detail, key_no, career_detail_data[key_no]])
+                career_data_mod = []
+                for key_type in self.select_info_career.keys():
+                    career_type_data = self.select_info_career[key_type]
+                    for key_detail in career_type_data.keys():
+                        career_detail_data = career_type_data[key_detail]
+                        for key_no in career_detail_data.keys():
+                            career_data_mod.append([key_type, key_detail, key_no, career_detail_data[key_no]])
+                self.tableWidget_career.setRowCount(len(career_data_mod))
+                for m_idx, m_row in enumerate(career_data_mod):
+                    self.tableWidget_career.setRowHeight(m_idx, 15)
 
-            for m_idx, m_row in enumerate(career_data_mod):
-                self.tableWidget_career.insertRow(m_idx)
-                self.tableWidget_career.setRowHeight(m_idx, 15)
-                for r_idx, r_data in enumerate(m_row):
-                    cell_item = QTableWidgetItem(str(r_data if r_data else ""))
-                    self.tableWidget_career.setItem(m_idx, r_idx+1, cell_item)
+                    cellWidget = QWidget()
+                    layoutCB = QHBoxLayout(cellWidget)
+                    chk_career_del = QCheckBox()
+                    layoutCB.addWidget(chk_career_del)
+                    layoutCB.setAlignment(QtCore.Qt.AlignCenter)
+                    layoutCB.setContentsMargins(0, 0, 0, 0)
+                    cellWidget.setLayout(layoutCB)
+                    self.tableWidget_career.setCellWidget(m_idx, 0, cellWidget)
 
-                cellWidget = QWidget()
-                layoutCB = QHBoxLayout(cellWidget)
-                chk_career_del = QCheckBox()
-                layoutCB.addWidget(chk_career_del)
-                layoutCB.setAlignment(QtCore.Qt.AlignCenter)
-                layoutCB.setContentsMargins(0, 0, 0, 0)
-                cellWidget.setLayout(layoutCB)
-
-                self.tableWidget_career.setCellWidget(m_idx, 0, cellWidget)
+                    for r_idx, r_data in enumerate(m_row):
+                        cell_item = QTableWidgetItem()
+                        cell_item.setText(r_data if r_data else "")
+                        self.tableWidget_career.setItem(m_idx, r_idx+1, cell_item)
+            except Exception as e:
+                QMessageBox.critical(self, "오류", e.args[0])
+                self.close()
         else:
             self.tableWidget_career.setRowCount(1)
             self.tableWidget_career.setSpan(0, 0, 1, self.careerTableColCount)
@@ -275,6 +279,7 @@ class ModelWindow(QtWidgets.QDialog):
                 data_list = [career_data]
                 if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
                     conn.commit()
+                    self.tableWidget_career.setRowCount(0)
                     self.careerTable()
             elif v_mod_type == "ALL_DELETE":
                 if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateCareer, v_mod_type, [{"key": self.select_key}]):
