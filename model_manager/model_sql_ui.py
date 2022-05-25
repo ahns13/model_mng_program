@@ -53,9 +53,12 @@ def condition_career(v_tab_alias, v_srch_dir):
 
 
 def sql_execute(v_cur_cursor, v_sql, **kwargs):
-    # ins_data = None, execute_only = False, key = None
+    """
+    execute_only = False : 필수
+    key = None : 에러 발생 시 점유 해제 필요 시
+    """
     try:
-        if "execute_many" in kwargs and kwargs["execute_maney"]:
+        if "execute_many" in kwargs and kwargs["execute_many"]:
             v_cur_cursor.executemany(v_sql, kwargs["ins_data"])
         elif "ins_data" in kwargs:
             v_cur_cursor.execute(v_sql, kwargs["ins_data"])
@@ -237,43 +240,62 @@ def updateHobbynspec(v_update_tuple):
 
 def info_career(v_key):
     cursor = conn.cursor()
-    sql = "SELECT a.career_type, a.no, case when a.detail_gubun = '해당없음' then null else a.detail_gubun||'-' end||a.careers as careers\n"
+    sql = "SELECT a.career_type, a.detail_gubun, to_char(a.no) as no, a.careers\n"
     sql += "  FROM CAREER A, COMBO_MAP_LIST B\n"
     sql += " WHERE A.CAREER_TYPE = B.COL_NAME\n"
     sql += "   AND A.KEY = " + str(v_key)
     sql += "   AND B.COMBO_TYPE = 'CAREER'\n"
     sql += " ORDER BY B.SORT_ORDER, A.NO"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
-    cursor.close()
     career_result = {}
     for row in result:
         if row[0] not in career_result:
             career_result[row[0]] = {}
-        career_result[row[0]][row[1]] = row[2]
-    return career_result
+        if row[1] not in career_result[row[0]]:
+            career_result[row[0]][row[1]] = {}
+        career_result[row[0]][row[1]][row[2]] = row[3]
+    columns = [d[0].lower() for d in cursor.description]
+    cursor.close()
+    return [columns, career_result]
 
 
 def updateCareer(v_update_tuple):
     """
-    v_update_tuple[mod_type, key, career_type, detail_gubun, no, insert_value]
-    mod_type: INSERT/DELETE
+    v_update_tuple
+    INSERT : (mod_type, key, career_type, detail_gubun, insert_value)
+    UPDATE : (mod_type, key, career_type, detail_gubun, no, insert_value)
+    DELETE : (mod_type, key, career_type, detail_gubun, no)
+    mod_type: INSERT/UPDATE/DELETE
     """
+    v_data_list = v_update_tuple[1]
+    v_key = v_data_list[0]["key"]
     cursor = conn.cursor()
-    if v_update_tuple[1] == "INSERT":
-        sql = "INSERT INTO CAREER VALUES\n"
-        sql += "(:1, :2, :3," + \
-               "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" \
-               " WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3), :4, SYSDATE,'admin',SYSDATE,'admin')"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:4]+[v_update_tuple[5]])
-    elif v_update_tuple[1] == "UPDATE":
-        sql = "UPDATE CAREER SET CAREERS = :5 WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3 AND NO = :4"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:])
-    elif v_update_tuple[1] == "DELETE":
-        sql = "DELETE CAREER WHERE KEY = :1 AND CAREER_TYPE = :2 AND DETAIL_GUBUN = :3 AND NO = :4"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[1], ins_data=v_update_tuple[1:5])
+    if v_update_tuple[0] == "INSERT":
+        sql = "INSERT INTO CAREER VALUES\n" + \
+              "(:key, :career_type, :detail_gubun, " + \
+              "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" + \
+              " WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun), :careers, SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
+    elif v_update_tuple[0] == "UPDATE":
+        sql = "UPDATE CAREER SET CAREERS = :5 WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+    elif v_update_tuple[0] == "DELETE":
+        sql = "DELETE CAREER WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+    elif v_update_tuple[0] == "ALL_DELETE":
+        sql = "DELETE CAREER WHERE KEY = " + v_key
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
     cursor.close()
     return True
 
 
 if __name__ == "__main__":
-    pass
+    cursor = conn.cursor()
+    sql = "INSERT INTO CAREER VALUES\n" + \
+          "(:key, :type, :detail, " + \
+          "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" + \
+          " WHERE KEY = :key AND CAREER_TYPE = :type AND DETAIL_GUBUN = :detail), :value, SYSDATE,'admin',SYSDATE,'admin')"
+    sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=278, ins_data={"key":278, "type":'드라마', "detail":'해당없음', "value":'aaaa'})
+    cursor.close()
+    conn.commit()
+    conn.close()
