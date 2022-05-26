@@ -129,6 +129,10 @@ class MainWindow(QMainWindow, form_class):
         self.buttonStyleCss(self.btn_items_clear, "rgb(251, 86, 7)")
         self.btn_items_clear.clicked.connect(lambda: self.deleteItemBtn(True, ""))
 
+        # 버튼: 신규
+        self.buttonStyleCss(self.btn_new, "rgb(58, 134, 255)")
+        self.btn_new.clicked.connect(self.modelClickOpenWindow)
+
         self.show()
 
     def buttonStyleCss(self, obj_button, v_rgb_color):
@@ -285,23 +289,29 @@ class MainWindow(QMainWindow, form_class):
                 if self.tableColIndexRng[0] <= r_idx <= self.tableColIndexRng[1]:
                     self.tableWidget.setItem(m_idx, r_idx+1, QTableWidgetItem(str(r_data if r_data else "")))
 
+        self.tableWidget.blockSignals(False)
+
     def noSearchMsg(self):  # 조회된 결과가 없을 때
         self.tableDataInit()
         self.tableWidget.setRowCount(1)
-        self.tableWidget.setSpan(0, 0, 1, self.tableColCount)
+        self.tableWidget.setSpan(0, 0, 1, self.tableWidget.columnCount())
         self.tableWidget.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
         self.tableWidget.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+        self.tableWidget.blockSignals(True)
 
     def tableClickOpenFile(self, item):
         if item.column() == self.tableClickIndex["tablePptFileColIndex"]:
-            if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
-                try:
-                    file_path = self.tableData[item.row()][7]
-                    self.ppt_application.Presentations.Open(file_path)
-                except:
-                    QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
-            else:
-                QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
+            reply = QMessageBox.question(self, " ", "선택한 모델의 ppt 파일을 실행합니다.",
+                                         QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
+                    try:
+                        file_path = self.tableData[item.row()][7]
+                        self.ppt_application.Presentations.Open(file_path)
+                    except:
+                        QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
+                else:
+                    QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
         elif item.column() == self.tableClickIndex["tableDetailInfoIndex"]:
             self.modelClickOpenWindow(self.tableData[item.row()][9])
 

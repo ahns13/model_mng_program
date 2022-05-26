@@ -390,7 +390,7 @@
      <rect>
       <x>20</x>
       <y>160</y>
-      <width>70</width>
+      <width>75</width>
       <height>24</height>
      </rect>
     </property>
@@ -398,7 +398,7 @@
      <cursorShape>PointingHandCursor</cursorShape>
     </property>
     <property name="text">
-     <string>조 회</string>
+     <string>조  회</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="gbox_input_item">
@@ -483,6 +483,22 @@
     </property>
     <property name="text">
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;기타 정보&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_new">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>160</y>
+      <width>75</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="text">
+     <string>신  규</string>
     </property>
    </widget>
   </widget>

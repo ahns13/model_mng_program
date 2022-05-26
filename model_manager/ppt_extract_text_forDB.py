@@ -366,7 +366,7 @@ def shape_exec(cls_model, p_shape):
                     cont_name = re.search(re.compile(re_name_only), cont_name_n_tel).group().strip()
                     cont_tel = re.search(re_cont_tel, cont_name_n_tel).group()
                     position = position_check(cont_name)
-                    manager_gubun = ""
+                    manager_gubun = "N"
                     if position:  # 직책, 직급이 이름에 존재하면 이를 추출
                         cont_name = re.sub(" |"+position, "", cont_name)
                         manager_gubun = "M"

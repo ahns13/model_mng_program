@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -72,7 +72,7 @@ def sql_execute(v_cur_cursor, v_sql, **kwargs):
         print("error code : " + str(error.code))
         print(error.message)
         print(error.context)
-        if kwargs and "key" in kwargs:
+        if kwargs and "key" in kwargs and kwargs["key"] is not None:
             flagStatus(kwargs["key"], 0)  # 점유중인 데이터를 해제
         v_cur_cursor.close()
         if kwargs and "er_rollback" in kwargs:
@@ -172,14 +172,14 @@ def get_comboBox_list_career():
 
 def flagStatus(v_key, v_status):
     cursor = conn.cursor()
-    sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = " + str(v_key)
+    sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = '" + str(v_key) + "'"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
 
     if result[0][0] == v_status:
         cursor.close()
         return 0
     else:
-        sql = "BEGIN SP_FLAG_STATUS("+str(v_key)+", "+str(v_status)+"); END;"
+        sql = "BEGIN SP_FLAG_STATUS('"+str(v_key)+"', "+str(v_status)+"); END;"
         sql_execute(cursor, sql, execute_only=True)
         cursor.close()
         if result[0][0] == 0 and v_status == 1:
@@ -192,14 +192,17 @@ def info_profile(v_key):
     sql = "SELECT name, real_name, birth_date, height, weight, size_top, size_pants, size_shoe, size_other\n"
     sql += "     , tel, email, insta_id, model_desc, data_date\n"
     sql += "  FROM MODEL_PROFILE\n"
-    sql += " WHERE KEY = " + str(v_key)
+    sql += " WHERE KEY = '" + str(v_key) + "'"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
     columns = [d[0].lower() for d in cursor.description]  # 칼럼명은 대문자로 입력됨
-    result_profile = {columns[idx]: (str(data) if data is not None or data == "None" else "") for idx, data in enumerate(result[0])}
+    if len(result):
+        result_profile = {col: (str(result[0][idx]) if result[0][idx] is not None and result[0][idx] != "None" else "") for idx, col in enumerate(columns)}
+    else:
+        result_profile = {col: "" for idx, col in enumerate(columns)}
 
     sql = "SELECT no, nvl(hobbynspec, '') as hobbynspec\n"
     sql += "  FROM HOBBYNSPEC\n"
-    sql += " WHERE KEY = " + str(v_key)
+    sql += " WHERE KEY = '" + str(v_key) + "'"
     sql += " ORDER BY no"
     result_hobbynspec = sql_execute(cursor, sql, execute_only=False, key=v_key)
     cursor.close()
@@ -243,7 +246,7 @@ def info_career(v_key):
     sql = "SELECT a.career_type, a.detail_gubun, to_char(a.no) as no, a.careers\n"
     sql += "  FROM CAREER A, COMBO_MAP_LIST B\n"
     sql += " WHERE A.CAREER_TYPE = B.COL_NAME\n"
-    sql += "   AND A.KEY = " + str(v_key)
+    sql += "   AND A.KEY = '" + str(v_key) + "'\n"
     sql += "   AND B.COMBO_TYPE = 'CAREER'\n"
     sql += " ORDER BY B.SORT_ORDER, A.NO"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
@@ -289,13 +292,30 @@ def updateCareer(v_update_tuple):
     return True
 
 
-if __name__ == "__main__":
+def getCMCodeList(v_g_code):
     cursor = conn.cursor()
-    sql = "INSERT INTO CAREER VALUES\n" + \
-          "(:key, :type, :detail, " + \
-          "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" + \
-          " WHERE KEY = :key AND CAREER_TYPE = :type AND DETAIL_GUBUN = :detail), :value, SYSDATE,'admin',SYSDATE,'admin')"
-    sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=278, ins_data={"key":278, "type":'드라마', "detail":'해당없음', "value":'aaaa'})
+    sql = "SELECT CODE, CODE_NM FROM CM_CODE WHERE G_CODE = '" + v_g_code + "' AND USE_YN = 'Y' ORDER BY SORT_ORDER"
+    result = sql_execute(cursor, sql, execute_only=False)
     cursor.close()
-    conn.commit()
-    conn.close()
+    code_list = []
+    code_map = {}
+    for cd in result:
+        code_list.append(cd[1])
+        code_map[cd[1]] = cd[0]
+    return [code_list, code_map]
+
+
+def info_contact(v_key):
+    cursor = conn.cursor()
+    sql = "SELECT name, sf_code_nm('CONTACT_GUBUN', gubun) as gubun, position, mng_gubun, tel, email, data_date\n"
+    sql += "  FROM CONTACT\n"
+    sql += " WHERE KEY = '" + str(v_key) + "'\n"
+    sql += " ORDER BY NO"
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
+    columns = [d[0].lower() for d in cursor.description]
+    cursor.close()
+    return [columns, result]
+
+
+if __name__ == "__main__":
+    pass

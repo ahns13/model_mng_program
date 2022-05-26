@@ -9,10 +9,13 @@ def comboStyleCss(obj_comboBox, v_list_width):
 
 def getCheckListFromTable(obj_table, obj_check_box):
     check_idx_list = []
-    for r_idx in range(obj_table.rowCount()):
-        if obj_table.cellWidget(r_idx, 0).findChild(obj_check_box).checkState():
-            check_idx_list.append(r_idx)
-    return check_idx_list
+    try:
+        for r_idx in range(obj_table.rowCount()):
+            if obj_table.cellWidget(r_idx, 0).findChild(obj_check_box).checkState():
+                check_idx_list.append(r_idx)
+        return check_idx_list
+    except Exception:
+        return []
 
 
 def nvl(v_value1, v_value2):
