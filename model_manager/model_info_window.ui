@@ -339,6 +339,9 @@ cursor: pointer;</string>
      <property name="text">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;신&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;장&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
+     <property name="textFormat">
+      <enum>Qt::AutoText</enum>
+     </property>
      <property name="alignment">
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
      </property>
@@ -1313,7 +1316,7 @@ cursor: pointer;</string>
     </column>
     <column>
      <property name="text">
-      <string>순번</string>
+      <string>번호</string>
      </property>
     </column>
     <column>
@@ -1529,6 +1532,11 @@ cursor: pointer;</string>
     <column>
      <property name="text">
       <string/>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>번호</string>
      </property>
     </column>
     <column>
@@ -1851,7 +1859,7 @@ border-radius: 5px;
 cursor: pointer;</string>
     </property>
     <property name="text">
-     <string>저장</string>
+     <string>추가</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btn_contact_all_delete">

@@ -131,7 +131,7 @@ class MainWindow(QMainWindow, form_class):
 
         # 버튼: 신규
         self.buttonStyleCss(self.btn_new, "rgb(58, 134, 255)")
-        self.btn_new.clicked.connect(self.modelClickOpenWindow)
+        self.btn_new.clicked.connect(lambda: self.modelClickOpenWindow(""))
 
         self.show()
 

@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -214,11 +214,20 @@ def updateProfile(v_update_tuple):
     v_update_tuple[key, update_value]
     """
     cursor = conn.cursor()
-    sql = "UPDATE MODEL_PROFILE\n"
-    sql += "  SET "
+    column_list = ""
+    value_list = ""
+    sql = "MERGE INTO MODEL_PROFILE\n" \
+          "  USING DUAL\n" \
+          "    ON (KEY = '" + str(v_update_tuple[0]) + "')\n" \
+          " WHEN MATCHED THEN\n" \
+          "   UPDATE SET "
     for idx, data in enumerate(v_update_tuple[1]):
-        sql += ("     , " if idx else "") + data[0] + " = '" + str(data[1]) + "'\n"
-    sql += " WHERE KEY = " + str(v_update_tuple[0]) + "\n"
+        sql += (", " if idx else "") + data[0] + " = '" + str(data[1]) + "'"
+        column_list += (", " if idx else "") + data[0]
+        value_list += (", " if idx else "") + "'" + str(data[1]) + "'"
+    sql += "\nWHEN NOT MATCHED THEN\n" \
+           "   INSERT (key, " + column_list + ") VALUES ((SELECT NVL(MAX(KEY),0)+1 FROM MODEL_PROFILE), " + value_list + ")"
+
     sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
     cursor.close()
     return True
@@ -265,9 +274,9 @@ def info_career(v_key):
 def updateCareer(v_update_tuple):
     """
     v_update_tuple
-    INSERT : (mod_type, key, career_type, detail_gubun, insert_value)
-    UPDATE : (mod_type, key, career_type, detail_gubun, no, insert_value)
-    DELETE : (mod_type, key, career_type, detail_gubun, no)
+    INSERT : (mod_type, [{key, career_type, detail_gubun, insert_value}])
+    UPDATE : (mod_type, [{key, career_type, detail_gubun, no, insert_value}])
+    DELETE : (mod_type, [{key, career_type, detail_gubun, no}])
     mod_type: INSERT/UPDATE/DELETE
     """
     v_data_list = v_update_tuple[1]
@@ -286,7 +295,7 @@ def updateCareer(v_update_tuple):
         sql = "DELETE CAREER WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
     elif v_update_tuple[0] == "ALL_DELETE":
-        sql = "DELETE CAREER WHERE KEY = " + v_key
+        sql = "DELETE CAREER WHERE KEY = '" + v_key + "'"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
     cursor.close()
     return True
@@ -307,7 +316,7 @@ def getCMCodeList(v_g_code):
 
 def info_contact(v_key):
     cursor = conn.cursor()
-    sql = "SELECT name, sf_code_nm('CONTACT_GUBUN', gubun) as gubun, position, mng_gubun, tel, email, data_date\n"
+    sql = "SELECT to_char(no) no, name, sf_code_nm('CONTACT_GUBUN', gubun) as gubun, position, mng_gubun, tel, email, data_date\n"
     sql += "  FROM CONTACT\n"
     sql += " WHERE KEY = '" + str(v_key) + "'\n"
     sql += " ORDER BY NO"
@@ -317,5 +326,56 @@ def info_contact(v_key):
     return [columns, result]
 
 
+def updateContact(v_update_tuple):
+    """
+    v_update_tuple
+    INSERT : (mod_type, [{key, name, gubun, position, mng_gubun, tel, email, data_date}])
+    UPDATE : (mod_type, [{key, no, name, gubun, position, mng_gubun, tel, email, data_date}])
+    DELETE : (mod_type, [{key, no}])
+    mod_type: INSERT/UPDATE/DELETE
+    """
+    v_data_list = v_update_tuple[1]
+    v_key = v_data_list[0]["key"]
+    cursor = conn.cursor()
+    if v_update_tuple[0] == "INSERT":
+        sql = "INSERT INTO CONTACT VALUES\n" \
+              "(:key, (SELECT NVL(MAX(NO),0)+1 FROM CONTACT WHERE KEY = :key), :name, :gubun, :position, " + \
+              ":mng_gubun, :tel, :email, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
+    elif v_update_tuple[0] == "UPDATE":
+        first_check = 0
+        for r_idx, row in enumerate(v_data_list):
+            sql = "UPDATE CONTACT SET "
+            for c_idx, col in enumerate(list(row.keys())[2:]):  # key, no 제외
+                sql += (", " if first_check else "") + col+" = :"+col
+                first_check += 1
+            sql += "\n"
+            sql += " WHERE KEY = :key AND NO = :no"
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[r_idx])
+    elif v_update_tuple[0] == "DELETE":
+        sql = "DELETE CONTACT WHERE KEY = :key AND NO = :no"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+    elif v_update_tuple[0] == "ALL_DELETE":
+        sql = "DELETE CONTACT WHERE KEY = '" + v_key + "'"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
+    cursor.close()
+    return True
+
+
+def getColType():
+    cursor = conn.cursor()
+    sql = "SELECT LOWER(GUBUN) GUBUN, LOWER(COL_NAME) COL_NAME, DATA_TYPE, DATA_LEN\n" \
+          "  FROM COLUMN_VALUE_TYPE\n" \
+          " ORDER BY COL_NAME"
+    result = sql_execute(cursor, sql, execute_only=False)
+    result_mod_data = {}
+    for r in result:
+        if r[0] not in result_mod_data:
+            result_mod_data[r[0]] = []
+        result_mod_data[r[0]].append(r[1:])
+    return result_mod_data
+
+
 if __name__ == "__main__":
     pass
+

@@ -1,14 +1,19 @@
 import sys
 import copy
+import re
 from PyQt5 import QtWidgets
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHobbynspec, get_comboBox_list_career, \
-    info_career, updateCareer,getCMCodeList, info_contact
+    info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType
 from model_functions import *
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
+color_set = {
+    "name": "#bf472c",  # changed or error
+    "list": [191, 71, 44]
+}
 
 
 class CareerDelegate(QtWidgets.QStyledItemDelegate):
@@ -29,11 +34,11 @@ class ContactDelegate(QtWidgets.QStyledItemDelegate):
         super(ContactDelegate, self).initStyleOption(option, index)
         option.font.setPixelSize(10)
 
-        if index.column() in [2,3,4,5,7]:
+        if index.column() in [1,3,4,5,7,8]:
             option.displayAlignment = QtCore.Qt.AlignCenter
 
     def createEditor(self, parent, option, index):
-        if index.column() in [1,3,4,5,6,7]:
+        if index.column() in [2,4,5,6,7,8]:
             return super(ContactDelegate, self).createEditor(parent, option, index)
 
 
@@ -49,6 +54,7 @@ class ModelWindow(QtWidgets.QDialog):
 
         if not self.flag_status:
             QMessageBox.about(self, "알림", flag_massage + "\n조회만 가능합니다.")
+
         # model_data
         self.select_info_profile = [profile_data[0], copy.deepcopy(profile_data[0])]  # [data_original, data_change]
         self.select_info_profile_hobbynspec = profile_data[1]  # no update, only insert, delete
@@ -60,6 +66,14 @@ class ModelWindow(QtWidgets.QDialog):
             # start_col_index, col_count
             "UPDATE": range(1, 5),
             "DELETE": range(1, 4)
+        }
+
+        # table_set_info
+        self.table_combobox_idx = {
+            "contact": [3]
+        }
+        self.table_no_edit_column = {
+            "contact": ["no"]
         }
 
         # model_profile
@@ -79,11 +93,11 @@ class ModelWindow(QtWidgets.QDialog):
         self.btn_profile_all_save.clicked.connect(lambda: self.profileUpdate(""))
         self.setStyleSheet("QLineEdit { font: 11px; }")
 
-        # 그룹박스 스타일: 하위 상속 방지 - #개체명 표시
+        # 영역 그룹박스 style #그룹박스 개체명 : 하위 위젯 상속 방지
         self.mainGroupBoxStyle("profile")
         self.mainGroupBoxStyle("career")
         self.mainGroupBoxStyle("contact")
-        # 그룹박스 border
+        # 항목별 그룹박스 border
         self.groupBox_career_type.setStyleSheet("QGroupBox#groupBox_career_type { border: None;}")
         self.groupBox_career_detail_gubun.setStyleSheet("QGroupBox#groupBox_career_detail_gubun { border: None;}")
         self.groupBox_career_insert_item.setStyleSheet("QGroupBox#groupBox_career_insert_item { border: None;}")
@@ -103,11 +117,11 @@ class ModelWindow(QtWidgets.QDialog):
             self.btn_career_delete.clicked.connect(lambda: self.careerDataExec("DELETE"))
             self.btn_career_all_delete.clicked.connect(lambda: self.careerDataExec("ALL_DELETE"))
 
-            self.tableWidget_career.setColumnWidth(0, 27)
-            self.tableWidget_career.setColumnWidth(1, 63)
-            self.tableWidget_career.setColumnWidth(2, 55)
+            self.tableWidget_career.setColumnWidth(0, 25)
+            self.tableWidget_career.setColumnWidth(1, 50)
+            self.tableWidget_career.setColumnWidth(2, 50)
             self.tableWidget_career.setColumnWidth(3, 35)
-            self.tableWidget_career.setColumnWidth(4, 110)
+            self.tableWidget_career.setColumnWidth(4, 95)
             self.careerTable()
 
             self.tableWidget_career.horizontalHeader().setFont(QtGui.QFont("", 8))
@@ -125,6 +139,7 @@ class ModelWindow(QtWidgets.QDialog):
             self.close()
 
         # contact
+        self.lineEdit_contact_name.setPlaceholderText("필수 입력 항목")
         try:
             contact_gubun_cd_data = getCMCodeList("CONTACT_GUBUN")
             self.comboBox_contact_gubun_list = contact_gubun_cd_data[0]
@@ -132,22 +147,24 @@ class ModelWindow(QtWidgets.QDialog):
             comboStyleCss(self.comboBox_contact_gubun, "100")
             self.comboBox_contact_gubun_map_data = contact_gubun_cd_data[1]
 
-            # self.btn_contact_insert.clicked.connect(lambda: self.contactDataExec("INSERT"))
-            # self.btn_contact_update.clicked.connect(lambda: self.contactDataExec("UPDATE"))
-            # self.btn_contact_delete.clicked.connect(lambda: self.contactDataExec("DELETE"))
-            # self.btn_contact_all_delete.clicked.connect(lambda: self.contactDataExec("ALL_DELETE"))
+            self.btn_contact_insert.clicked.connect(lambda: self.contactDataExec("INSERT"))
+            self.btn_contact_update.clicked.connect(lambda: self.contactDataExec("UPDATE"))
+            self.btn_contact_delete.clicked.connect(lambda: self.contactDataExec("DELETE"))
+            self.btn_contact_all_delete.clicked.connect(lambda: self.contactDataExec("ALL_DELETE"))
 
             self.tableWidget_contact.setColumnWidth(0, 30)
-            self.tableWidget_contact.setColumnWidth(1, 100)
-            self.tableWidget_contact.setColumnWidth(2, 73)
-            self.tableWidget_contact.setColumnWidth(3, 60)
-            self.tableWidget_contact.setColumnWidth(4, 65)
-            self.tableWidget_contact.setColumnWidth(5, 100)
-            self.tableWidget_contact.setColumnWidth(6, 100)
-            self.tableWidget_contact.setColumnWidth(7, 70)
+            self.tableWidget_contact.setColumnWidth(1, 35)
+            self.tableWidget_contact.setColumnWidth(2, 100)
+            self.tableWidget_contact.setColumnWidth(3, 73)
+            self.tableWidget_contact.setColumnWidth(4, 60)
+            self.tableWidget_contact.setColumnWidth(5, 65)
+            self.tableWidget_contact.setColumnWidth(6, 90)
+            self.tableWidget_contact.setColumnWidth(7, 100)
+            self.tableWidget_contact.setColumnWidth(8, 65)
             self.contactTable()
 
             self.tableWidget_contact.horizontalHeader().setFont(QtGui.QFont("", 8))
+            self.tableWidget_career.verticalHeader().setVisible(False)
             self.tableWidget_contact.verticalHeader().setDefaultSectionSize(15)
             self.tableWidget_contact.setWordWrap(False)
             self.tableWidget_contact.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
@@ -160,6 +177,15 @@ class ModelWindow(QtWidgets.QDialog):
             QMessageBox.critical(self, "Error", e.args[0])
             self.close()
 
+        # lineEdit value check
+        self.column_type_data = getColType()
+
+        # new : button set disabled
+        if not self.select_key:
+            for btn in self.findChildren(QPushButton):
+                if btn.objectName() and btn.objectName() != "btn_profile_all_save":
+                    btn.setDisabled(True)
+            self.btn_profile_all_save.setText("추가")
         self.show()
 
     def mainGroupBoxStyle(self, v_groupBox_name):
@@ -171,65 +197,72 @@ class ModelWindow(QtWidgets.QDialog):
     def profileUpdate(self, v_type):
         try:
             if self.flag_status:
-                if v_type == "hobbynspec":
-                    if self.btnExecOrCancel("save") == QMessageBox.Yes:
-                        edit_text = self.lineEdit_profile_hobbynspec.text()
-                        if len(edit_text):
-                            if self.updateExec([True, "저장 완료", "저장 실패"], updateHobbynspec, self.select_key, "INSERT", edit_text):
-                                conn.commit()
-                                self.hobbynspecInsertList(edit_text)
-                        else:
-                            QMessageBox.about(self, "알림", "빈 값은 추가할 수 없습니다.")
-                else:
-                    original_data = self.select_info_profile[0]
-                    for edit_key in original_data.keys():
-                        if not v_type or edit_key == v_type :
-                            cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
-                            self.select_info_profile[1][edit_key] = cur_lineEdit.text()
-                    change_data = self.select_info_profile[1]
+                if self.btnExecOrCancel("save") == QMessageBox.Yes:
+                    if v_type == "hobbynspec":
+                        if self.column_value_type_check("profile", v_type):
+                            edit_text = self.lineEdit_profile_hobbynspec.text()
+                            if len(edit_text):
+                                if self.updateExec([True, "저장 완료", "저장 실패"], updateHobbynspec, self.select_key, "INSERT", edit_text):
+                                    conn.commit()
+                                    self.hobbynspecInsertList(edit_text)
+                            else:
+                                QMessageBox.about(self, "알림", "빈 값은 추가할 수 없습니다.")
+                    else:
+                        if self.column_value_type_check("profile", v_type):
+                            original_data = self.select_info_profile[0]
 
-                    update_items = []
-                    for edit_key in change_data.keys():
-                        if not v_type or edit_key == v_type:
-                            if change_data[edit_key] != original_data[edit_key]:
-                                update_items.append([edit_key, change_data[edit_key]])
+                            for edit_key in original_data.keys():
+                                if not v_type or edit_key == v_type:
+                                    cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
+                                    self.select_info_profile[1][edit_key] = cur_lineEdit.text()
+                            change_data = self.select_info_profile[1]
 
-                    name_check = len(self.lineEdit_profile_name.text().replace(" ", ""))
-                    if (v_type == "name" or not v_type) and name_check <= 1:
-                        QMessageBox.warning(self, "알림", "모델명에 값이 없거나\n입력된 값이 정확한지 확인해 주세요.")
-                    elif v_type:
-                        if len(update_items):
-                            if self.updateExec([True, "저장 완료", "저장 실패"], updateProfile, self.select_key, update_items):
-                                for items in update_items:
-                                    original_data[items[0]] = items[1]
-                                conn.commit()
-                        else:
-                            QMessageBox.about(self, "알림", "변경된 데이터가 없습니다.")
-                    else:  # profile all
-                        if len(update_items):
-                            profile_result = self.updateExec([False], updateProfile, self.select_key, update_items)
-                            if profile_result:
-                                for items in update_items:
-                                    original_data[items[0]] = items[1]
-                        else:
-                            profile_result = 1
+                            update_items = []
+                            for edit_key in change_data.keys():
+                                if not v_type or edit_key == v_type:
+                                    if change_data[edit_key] != original_data[edit_key]:
+                                        update_items.append([edit_key, change_data[edit_key]])
 
-                        hobbynspec_input_text = self.lineEdit_profile_hobbynspec.text()
-                        if hobbynspec_input_text:
-                            hobbynspec_result = self.updateExec([False], updateHobbynspec, self.select_key, "INSERT",
-                                               hobbynspec_input_text)
-                            if hobbynspec_result:
-                                self.hobbynspecInsertList(hobbynspec_input_text)
-                        else:
-                            hobbynspec_result = 1
+                            if v_type:
+                                if len(update_items):
+                                    if self.updateExec([True, "저장 완료", "저장 실패"], updateProfile, self.select_key, update_items):
+                                        for items in update_items:
+                                            original_data[items[0]] = items[1]
+                                        conn.commit()
+                                else:
+                                    QMessageBox.about(self, "알림", "변경된 데이터가 없습니다.")
+                            else:  # profile all
+                                if len(update_items):
+                                    profile_result = self.updateExec([False], updateProfile, self.select_key, update_items)
+                                    if profile_result:
+                                        for items in update_items:
+                                            original_data[items[0]] = items[1]
+                                else:
+                                    profile_result = 0
 
-                        if profile_result == 1 and hobbynspec_result == 1:
-                            QMessageBox.about(self, "알림", "입력된 내용이 없습니다.")
-                        elif profile_result and hobbynspec_result:
-                            conn.commit()
-                            QMessageBox.about(self, "알림", "일괄 저장되었습니다.")
-                        else:
-                            QMessageBox.about(self, "알림", "저장에 오류가 있습니다.")
+                                hobbynspec_input_text = self.lineEdit_profile_hobbynspec.text()
+                                if hobbynspec_input_text:
+                                    hobbynspec_result = self.updateExec([False], updateHobbynspec, self.select_key, "INSERT",
+                                                        hobbynspec_input_text)
+                                    if hobbynspec_result:
+                                        self.hobbynspecInsertList(hobbynspec_input_text)
+                                else:
+                                    hobbynspec_result = 0
+
+                                if profile_result == 0 and hobbynspec_result == 0:
+                                    QMessageBox.about(self, "알림", "입력된 내용이 없습니다.")
+                                elif not self.select_key and profile_result:
+                                    conn.commit()
+                                    QMessageBox.about(self, "알림", "모델이 신규 생성되었습니다.")
+                                    for btn in self.findChildren(QPushButton):
+                                        if btn.objectName() and btn.objectName() != "btn_profile_all_save":
+                                            btn.setEnabled(True)
+                                    self.btn_profile_all_save.setText("일괄 반영")
+                                elif self.select_key and (profile_result or hobbynspec_result):
+                                    conn.commit()
+                                    QMessageBox.about(self, "알림", "일괄 저장되었습니다.")
+                                else:
+                                    QMessageBox.about(self, "알림", "저장에 오류가 있습니다.")
             else:
                 QMessageBox.about(self, "알림", flag_massage)
         except Exception as e:
@@ -331,7 +364,7 @@ class ModelWindow(QtWidgets.QDialog):
                         cell_item.setText(r_data if r_data else "")
                         self.tableWidget_career.setItem(m_idx, r_idx+1, cell_item)
                 self.tableWidget_career.blockSignals(False)
-                self.tableWidget_career.verticalHeader().setMinimumSectionSize(25)
+                self.tableWidget_career.verticalHeader().setMinimumSectionSize(22)
             except Exception as e:
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
@@ -349,15 +382,16 @@ class ModelWindow(QtWidgets.QDialog):
                     careers_text = self.lineEdit_career_insert_item.text()
                     if careers_text:
                         if self.btnExecOrCancel("save") == QMessageBox.Yes:
-                            career_data = {"key": self.select_key,
-                                           "career_type": self.comboBox_career_type.currentText(),
-                                           "detail_gubun": nvl(self.lineEdit_career_detail_gubun.text(), self.lineEdit_career_detail_gubun.placeholderText()),
-                                           "careers": careers_text}
-                            data_list = [career_data]
-                            if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
-                                conn.commit()
-                                self.careerTable()
-                            self.lineEdit_career_insert_item.setText("")
+                            if self.column_value_type_check("career"):
+                                career_data = {"key": self.select_key,
+                                               "career_type": self.comboBox_career_type.currentText(),
+                                               "detail_gubun": nvl(self.lineEdit_career_detail_gubun.text(), self.lineEdit_career_detail_gubun.placeholderText()),
+                                               "careers": careers_text}
+                                data_list = [career_data]
+                                if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
+                                    conn.commit()
+                                    self.careerTable()
+                                self.lineEdit_career_insert_item.setText("")
                     else:
                         QMessageBox.about(self, "알림", "경력에 추가할 값을 입력하세요.")
                 elif v_mod_type == "ALL_DELETE":
@@ -411,23 +445,23 @@ class ModelWindow(QtWidgets.QDialog):
                     self.tableWidget_contact.setCellWidget(m_idx, 0, cellWidget)
 
                     for r_idx, r_data in enumerate(m_row):
-                        if r_idx == 1:  # contact의 gubun[구분]
+                        if r_idx+1 in self.table_combobox_idx["contact"]:  # contact의 gubun[구분]
                             inComboBox = QComboBox()
                             inComboBox.addItems(self.comboBox_contact_gubun_list)
                             inComboBox.setCurrentText(r_data)
-                            inComboBox.setStyleSheet("""
-                                QComboBox { font: 11px; }
-                                QComboBox QAbstractItemView { font: 11px; min-width: 70px; }
-                                QComboBox QAbstractItemView::item { font: 11px; min-height: 20px; }
-                            """)
+                            # inComboBox.setStyleSheet("""
+                            #     QComboBox { font: 11px; }
+                            #     QComboBox QAbstractItemView { font: 11px; min-width: 70px; }
+                            #     QComboBox QAbstractItemView::item { font: 11px; min-height: 20px; }
+                            # """)
                             self.tableWidget_contact.setCellWidget(m_idx, r_idx+1, inComboBox)
                         else:
                             cell_item = QTableWidgetItem()
-                            cell_item.setText(r_data if r_data else "")
+                            cell_item.setText(str(r_data) if r_data else "")
                             self.tableWidget_contact.setItem(m_idx, r_idx + 1, cell_item)
 
                 self.tableWidget_contact.blockSignals(False)
-                self.tableWidget_contact.verticalHeader().setMinimumSectionSize(25)
+                self.tableWidget_contact.verticalHeader().setMinimumSectionSize(22)
             except Exception as e:
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
@@ -441,26 +475,118 @@ class ModelWindow(QtWidgets.QDialog):
         try:
             table_obj = item.tableWidget()
             table_obj_name = table_obj.objectName()
+            table_item_obj = table_obj.item(item.row(), item.column())
+
             row_list = []
             for col_idx in range(table_obj.columnCount()):
                 if col_idx > 0:
-                    row_list.append(table_obj.item(item.row(), col_idx).text())
+                    item_text = ""
+                    table_col_item_obj = table_obj.item(item.row(), col_idx)
+                    if table_col_item_obj is None:
+                        table_widget_obj = table_obj.cellWidget(item.row(), col_idx)
+                        if isinstance(table_widget_obj, QComboBox):
+                            item_text = table_widget_obj.currentText()
+                    else:
+                        item_text = table_col_item_obj.text()
 
-            original_text = ""
+                    row_list.append(item_text)
+
+            row_value_changed = False
             if table_obj_name == "tableWidget_career":
                 original_text = self.select_info_career[row_list[0]][row_list[1]][row_list[2]]
+                changed_text = item.text() if item.text() else None
+                row_value_changed = False if original_text == changed_text else True
             elif table_obj_name == "tableWidget_contact":
-                original_text = self.select_info_contact[item.row()][item.column()]
+                for idx, data in enumerate(self.select_info_contact[item.row()]):
+                    data = "" if data is None else data
+                    if not row_value_changed and data != row_list[idx]:
+                        row_value_changed = True
 
-            changed_text = item.text()
             widget_checkBox = table_obj.cellWidget(item.row(), 0).findChild(QCheckBox)
-            if original_text == changed_text:
-                widget_checkBox.setChecked(False)
-            else:
+            if row_value_changed:
                 widget_checkBox.setChecked(True)
+                if table_item_obj is not None:
+                    table_item_obj.setForeground(QtGui.QBrush(QtGui.QColor(color_set["list"][0], color_set["list"][1], color_set["list"][2])))
+            else:
+                widget_checkBox.setChecked(False)
+                if table_item_obj is not None:
+                    table_item_obj.setForeground(QtGui.QBrush(QtGui.QColor(0, 0, 0)))
         except Exception as e:
             QMessageBox.critical(self, "오류", e.args[0])
             self.close()
+            
+    def contactDataExec(self, v_mod_type):
+        data_list = []
+        try:
+            if self.flag_status:
+                if v_mod_type == "INSERT":
+                    if self.btnExecOrCancel("save") == QMessageBox.Yes:
+                        if self.column_value_type_check("contact"):
+                            contact_data = {"key": self.select_key}
+                            for col_idx, col in enumerate(self.contact_table_cols):
+                                if col in self.table_no_edit_column["contact"]:
+                                    pass
+                                elif col_idx+1 in self.table_combobox_idx["contact"]:
+                                    contact_data[col] = self.comboBox_contact_gubun_map_data[self.comboBox_contact_gubun.currentText()]
+                                else:
+                                    contact_data[col] = getattr(self, "lineEdit_contact_"+col).text()
+
+                            data_list = [contact_data]
+                            if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateContact, v_mod_type, data_list):
+                                conn.commit()
+                                self.contactTable()
+                            for col_idx, col in enumerate(self.contact_table_cols):
+                                if col in self.table_no_edit_column["contact"]:
+                                    pass
+                                elif col_idx + 1 in self.table_combobox_idx["contact"]:
+                                    self.comboBox_contact_gubun.setCurrentIndex(0)
+                                else:
+                                    getattr(self, "lineEdit_contact_"+col).setText("")
+                elif v_mod_type == "ALL_DELETE":
+                    if self.select_info_contact:
+                        if self.btnExecOrCancel("del") == QMessageBox.Yes:
+                            if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateContact, v_mod_type, [{"key": self.select_key}]):
+                                conn.commit()
+                                self.contactTable()
+                    else:
+                        QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
+                else:  # UPDATE/DELETE
+                    checked_list = getCheckListFromTable(self.tableWidget_contact, QCheckBox)
+                    if checked_list:
+                        if self.btnExecOrCancel("save" if v_mod_type == "UPDATE" else "del") == QMessageBox.Yes:
+                            for chk_idx in checked_list:
+                                contact_data = {"key": self.select_key}
+                                if v_mod_type == "UPDATE":
+                                    original_data = self.select_info_contact[chk_idx]
+                                    changed_data = []
+                                    for col_idx in list(range(self.tableWidget_contact.columnCount()))[1:]:
+                                        if col_idx in self.table_combobox_idx["contact"]:
+                                            combo_text = self.tableWidget_contact.cellWidget(chk_idx, col_idx).currentText()
+                                            changed_data.append(self.comboBox_contact_gubun_map_data[combo_text])
+                                        else:
+                                            table_item_data = self.tableWidget_contact.model().index(chk_idx, col_idx).data()
+                                            changed_data.append(table_item_data if table_item_data else None)
+
+                                    for idx, col in enumerate(self.contact_table_cols):
+                                        if col in self.table_no_edit_column["contact"]:
+                                            contact_data[self.contact_table_cols[idx]] = original_data[idx]
+                                        elif original_data[idx] != changed_data[idx]:
+                                            contact_data[self.contact_table_cols[idx]] = changed_data[idx]
+                                    data_list.append(contact_data)
+                                else:
+                                    for idx, col in enumerate(self.contact_table_cols):
+                                        if col == "no":
+                                            contact_data["no"] = self.select_info_contact[chk_idx][idx]
+                                    data_list.append(contact_data)
+                            if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateContact, v_mod_type, data_list):
+                                conn.commit()
+                                self.contactTable()
+                    else:
+                        QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
+            else:
+                QMessageBox.about(self, "알림", flag_massage)
+        except Exception as e:
+            QMessageBox.critical(self, "오류", e.args[0])
 
     def btnExecOrCancel(self, v_exec_type):
         question_msg_text = {"save": "저장", "del": "삭제"}
@@ -468,18 +594,75 @@ class ModelWindow(QtWidgets.QDialog):
                                      QMessageBox.Yes | QMessageBox.No)
         return reply
 
-    # def keyPressEvent(self, event):
-    #     print(dir(self))
-    #     try:
-    #         if event.key() == QtCore.Qt.Key_F2:
-    #             focusWidget = self.focusWidget()
-    #             if isinstance(focusWidget, QTableWidget):
-    #                 self.tableCellEdited()
-    #     except Exception as e:
-    #         print(e)
+    def column_value_type_check(self, v_type_gubun, v_column=None):
+        key_column_input_check = True
+        message_list = []
+        for data in self.column_type_data[v_type_gubun]:
+            if not v_column or data[0] == v_column:
+                obj_lineEdit = getattr(self, "lineEdit_" + v_type_gubun + "_" + data[0])
+                lineEdit_input_text = obj_lineEdit.text()
+
+                check_value_type = "str"
+                try:
+                    float(lineEdit_input_text)
+                    check_value_type = "float"
+                except ValueError:
+                    pass
+                try:
+                    int(lineEdit_input_text)
+                    check_value_type = "int"
+                except ValueError:
+                    pass
+
+                obj_label = getattr(self, "label_" + v_type_gubun + "_" + data[0])
+                label_text = QtGui.QTextDocumentFragment.fromHtml(obj_label.text()).toPlainText()
+
+                if data[0] == "name" and len(lineEdit_input_text.replace(" ", "")) <= 1:
+                    key_column_input_check = False
+                    message_list.append(label_text.replace(" ", "") + "(은)는 필수 입력 항목입니다.")
+                    break
+
+                if check_value_type == data[1]:
+                    if check_value_type == "float":
+                        string_length = data[2].split(",")
+                        divided_text = re.findall("[0-9]+", lineEdit_input_text)
+                        if len(divided_text[0]) > int(string_length[0]):
+                            message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 정수 부분 제한 자리수보다 큰 값을 입력하였습니다."])
+                        elif len(divided_text[1]) > int(string_length[1]):
+                            message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 소수점 부분 제한 자리수보다 큰 값을 입력하였습니다."])
+                    elif len(lineEdit_input_text) > int(data[2]):
+                        message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 제한된 길이를 초과하였습니다."])
+                    else:
+                        pass
+                elif data[1] == "int" and check_value_type == "float":
+                    message_list.append([obj_lineEdit, label_text.replace(" ", "") + "에는 소수점이 허락되지 않습니다."])
+                elif not lineEdit_input_text or data[1] == "str" or (data[1] == "float" and check_value_type == "int"):
+                    pass
+                else:
+                    message_list.append([obj_lineEdit, label_text.replace(" ", "") + "에 입력된 값이 맞게 입력되었는지 확인하세요."])
+
+        if not key_column_input_check:
+            QMessageBox.about(self, "알림", message_list[0])
+        elif message_list:
+            msg_text = ""
+            for idx, msg in enumerate(message_list):
+                msg_text += msg[1] + ("" if idx == len(message_list)-1 else "\n")
+                msg[0].setStyleSheet("color: " + color_set["name"])
+            QMessageBox.about(self, "알림", msg_text)
+        else:
+            for data in self.column_type_data[v_type_gubun]:
+                if not v_column or data[0] == v_column:
+                    obj_lineEdit = getattr(self, "lineEdit_" + v_type_gubun + "_" + data[0])
+                    if obj_lineEdit.palette().windowText().color().name() == color_set["name"]:
+                        obj_lineEdit.setStyleSheet("color: #000000")
+            return True
+
+    def keyPressEvent(self, e):
+        if e.key() == QtCore.Qt.Key_Escape:
+            pass
 
     def closeEvent(self, event):
-        if self.flag_status == 1:
+        if self.select_key and self.flag_status == 1:
             flagStatus(self.select_key, 0)
 
 
@@ -501,7 +684,13 @@ career_btn_style = """
     padding-top: 1px;
 """
 
+button_disabled = """
+    QPushButton:disabled {
+        background-color: #eee;
+    }
+"""
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(1)
+    window = ModelWindow()
     app.exec_()
