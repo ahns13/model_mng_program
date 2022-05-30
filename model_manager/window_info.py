@@ -6,7 +6,7 @@ from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHobbynspec, get_comboBox_list_career, \
-    info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType
+    info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile
 from model_functions import *
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
@@ -100,7 +100,7 @@ class ModelWindow(QtWidgets.QDialog):
         # 항목별 그룹박스 border
         self.groupBox_career_type.setStyleSheet("QGroupBox#groupBox_career_type { border: None;}")
         self.groupBox_career_detail_gubun.setStyleSheet("QGroupBox#groupBox_career_detail_gubun { border: None;}")
-        self.groupBox_career_insert_item.setStyleSheet("QGroupBox#groupBox_career_insert_item { border: None;}")
+        self.groupBox_career_careers.setStyleSheet("QGroupBox#groupBox_career_careers { border: None;}")
         self.groupBox_contact_1.setStyleSheet("QGroupBox#groupBox_contact_1 { border: None;}")
         self.groupBox_contact_2.setStyleSheet("QGroupBox#groupBox_contact_2 { border: None;}")
         self.groupBox_contact_3.setStyleSheet("QGroupBox#groupBox_contact_3 { border: None;}")
@@ -185,7 +185,8 @@ class ModelWindow(QtWidgets.QDialog):
             for btn in self.findChildren(QPushButton):
                 if btn.objectName() and btn.objectName() != "btn_profile_all_save":
                     btn.setDisabled(True)
-            self.btn_profile_all_save.setText("추가")
+            self.btn_profile_all_save.setText("등록")
+            QMessageBox.about(self, "알림", "신규 모델 정보 등록\n- 추가 버튼 외 기타 버튼은 작동하지 않습니다.\n- 모델 프로필이 등록된 후 버튼이 활성화 됩니다.")
         self.show()
 
     def mainGroupBoxStyle(self, v_groupBox_name):
@@ -251,13 +252,14 @@ class ModelWindow(QtWidgets.QDialog):
 
                                 if profile_result == 0 and hobbynspec_result == 0:
                                     QMessageBox.about(self, "알림", "입력된 내용이 없습니다.")
-                                elif not self.select_key and profile_result:
+                                elif not self.select_key and profile_result:  # 신규 프로필 등록
                                     conn.commit()
                                     QMessageBox.about(self, "알림", "모델이 신규 생성되었습니다.")
                                     for btn in self.findChildren(QPushButton):
                                         if btn.objectName() and btn.objectName() != "btn_profile_all_save":
                                             btn.setEnabled(True)
                                     self.btn_profile_all_save.setText("일괄 반영")
+                                    self.select_key = getMaxKeyOfProfile()
                                 elif self.select_key and (profile_result or hobbynspec_result):
                                     conn.commit()
                                     QMessageBox.about(self, "알림", "일괄 저장되었습니다.")
@@ -369,17 +371,25 @@ class ModelWindow(QtWidgets.QDialog):
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
         else:
-            self.tableWidget_career.setRowCount(1)
-            self.tableWidget_career.setSpan(0, 0, 1, self.tableWidget_career.columnCount())
-            self.tableWidget_career.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
-            self.tableWidget_career.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+            try:
+                self.tableWidget_career.setRowCount(0)
+                self.tableWidget_career.removeRow(0)
+                self.tableWidget_career.insertRow(0)
+                self.tableWidget_career.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
+                self.tableWidget_career.setSpan(0, 0, 1, self.tableWidget_career.columnCount())
+                self.tableWidget_career.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+            except Exception as e:
+                print(e)
+                print(e.args)
+                QMessageBox.critical(self, "오류", e.args[0])
+                self.close()
 
     def careerDataExec(self, v_mod_type):
         data_list = []
         try:
             if self.flag_status:
                 if v_mod_type == "INSERT":
-                    careers_text = self.lineEdit_career_insert_item.text()
+                    careers_text = self.lineEdit_career_careers.text()
                     if careers_text:
                         if self.btnExecOrCancel("save") == QMessageBox.Yes:
                             if self.column_value_type_check("career"):
@@ -391,7 +401,7 @@ class ModelWindow(QtWidgets.QDialog):
                                 if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
                                     conn.commit()
                                     self.careerTable()
-                                self.lineEdit_career_insert_item.setText("")
+                                self.lineEdit_career_careers.setText("")
                     else:
                         QMessageBox.about(self, "알림", "경력에 추가할 값을 입력하세요.")
                 elif v_mod_type == "ALL_DELETE":
@@ -413,7 +423,9 @@ class ModelWindow(QtWidgets.QDialog):
                                     data_list.append(career_data)
                             if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateCareer, v_mod_type, data_list):
                                 conn.commit()
+                                print('committed')
                                 self.careerTable()
+                                print('reload')
                     else:
                         QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
             else:
@@ -466,7 +478,8 @@ class ModelWindow(QtWidgets.QDialog):
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
         else:
-            self.tableWidget_contact.setRowCount(1)
+            self.tableWidget_contact.setRowCount(0)
+            self.tableWidget_contact.insertRow(0)
             self.tableWidget_contact.setSpan(0, 0, 1, self.tableWidget_contact.columnCount())
             self.tableWidget_contact.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
             self.tableWidget_contact.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
@@ -692,5 +705,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow()
+    window = ModelWindow(621)
     app.exec_()

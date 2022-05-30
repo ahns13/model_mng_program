@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -374,6 +374,14 @@ def getColType():
             result_mod_data[r[0]] = []
         result_mod_data[r[0]].append(r[1:])
     return result_mod_data
+
+
+def getMaxKeyOfProfile():
+    cursor = conn.cursor()
+    sql = "SELECT MAX(KEY)\n" \
+          "  FROM MODEL_PROFILE"
+    result = sql_execute(cursor, sql, execute_only=False)
+    return result[0][0]
 
 
 if __name__ == "__main__":
