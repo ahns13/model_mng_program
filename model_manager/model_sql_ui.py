@@ -172,7 +172,7 @@ def get_comboBox_list_career():
 
 def flagStatus(v_key, v_status):
     cursor = conn.cursor()
-    sql = "SELECT FLAG FROM MODEL_PROFILE WHERE KEY = '" + str(v_key) + "'"
+    sql = "SELECT NVL(FLAG,0) FLAG FROM MODEL_PROFILE WHERE KEY = '" + str(v_key) + "'"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
 
     if result[0][0] == v_status:
@@ -382,6 +382,18 @@ def getMaxKeyOfProfile():
           "  FROM MODEL_PROFILE"
     result = sql_execute(cursor, sql, execute_only=False)
     return result[0][0]
+
+
+def info_contract(v_key):
+    cursor = conn.cursor()
+    sql = "SELECT type, c_month, amount, ap, data_date\n"
+    sql += "  FROM CNTR_AMOUNT\n"
+    sql += " WHERE KEY = '" + str(v_key) + "'\n"
+    sql += " ORDER BY type, c_month"
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
+    columns = [d[0].lower() for d in cursor.description]
+    cursor.close()
+    return [columns, result]
 
 
 if __name__ == "__main__":

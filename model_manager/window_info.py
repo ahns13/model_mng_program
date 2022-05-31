@@ -6,7 +6,8 @@ from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHobbynspec, get_comboBox_list_career, \
-    info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile
+    info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile, \
+    info_contract
 from model_functions import *
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
@@ -40,6 +41,21 @@ class ContactDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         if index.column() in [2,4,5,6,7,8]:
             return super(ContactDelegate, self).createEditor(parent, option, index)
+
+
+class ContractDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super(ContractDelegate, self).initStyleOption(option, index)
+        option.font.setPixelSize(10)
+
+        if index.column() in [2,4,5]:
+            option.displayAlignment = QtCore.Qt.AlignCenter
+        elif index.column() in [3]:
+            option.displayAlignment = QtCore.Qt.AlignRight
+
+    # def createEditor(self, parent, option, index):
+    #     if index.column() in [2,4,5,6,7,8]:
+    #         return super(ContractDelegate, self).createEditor(parent, option, index)
 
 
 class ModelWindow(QtWidgets.QDialog):
@@ -97,13 +113,17 @@ class ModelWindow(QtWidgets.QDialog):
         self.mainGroupBoxStyle("profile")
         self.mainGroupBoxStyle("career")
         self.mainGroupBoxStyle("contact")
+        self.mainGroupBoxStyle("contract")
         # 항목별 그룹박스 border
         self.groupBox_career_type.setStyleSheet("QGroupBox#groupBox_career_type { border: None;}")
         self.groupBox_career_detail_gubun.setStyleSheet("QGroupBox#groupBox_career_detail_gubun { border: None;}")
         self.groupBox_career_careers.setStyleSheet("QGroupBox#groupBox_career_careers { border: None;}")
+        self.groupBox_career_careers.setStyleSheet("QGroupBox#groupBox_career_careers { border: None;}")
         self.groupBox_contact_1.setStyleSheet("QGroupBox#groupBox_contact_1 { border: None;}")
         self.groupBox_contact_2.setStyleSheet("QGroupBox#groupBox_contact_2 { border: None;}")
         self.groupBox_contact_3.setStyleSheet("QGroupBox#groupBox_contact_3 { border: None;}")
+        self.groupBox_contract_1.setStyleSheet("QGroupBox#groupBox_contract_1 { border: None;}")
+        self.groupBox_contract_2.setStyleSheet("QGroupBox#groupBox_contract_2 { border: None;}")
 
         # career
         try:
@@ -164,7 +184,7 @@ class ModelWindow(QtWidgets.QDialog):
             self.contactTable()
 
             self.tableWidget_contact.horizontalHeader().setFont(QtGui.QFont("", 8))
-            self.tableWidget_career.verticalHeader().setVisible(False)
+            self.tableWidget_contact.verticalHeader().setVisible(False)
             self.tableWidget_contact.verticalHeader().setDefaultSectionSize(15)
             self.tableWidget_contact.setWordWrap(False)
             self.tableWidget_contact.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
@@ -173,6 +193,39 @@ class ModelWindow(QtWidgets.QDialog):
             self.tableWidget_contact.setItemDelegate(contact_delegate)
 
             self.tableWidget_contact.itemChanged.connect(self.tableCellEdited)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", e.args[0])
+            self.close()
+
+        # contract
+        self.lineEdit_contract_type.setPlaceholderText("필수 입력 항목")
+        try:
+            contract_c_month_cd_data = getCMCodeList("C_MONTH")
+            self.comboBox_contract_c_month_list = contract_c_month_cd_data[0]
+            self.comboBox_contract_c_month.addItems(self.comboBox_contract_c_month_list)
+            comboStyleCss(self.comboBox_contract_c_month, "100")
+            self.comboBox_contract_c_month_map_data = contract_c_month_cd_data[1]
+
+            self.btn_contract_insert.clicked.connect(lambda: self.contractDataExec("INSERT"))
+            self.btn_contract_delete.clicked.connect(lambda: self.contractDataExec("DELETE"))
+            self.btn_contract_all_delete.clicked.connect(lambda: self.contractDataExec("ALL_DELETE"))
+    
+            self.tableWidget_contract.setColumnWidth(0, 30)
+            self.tableWidget_contract.setColumnWidth(1, 75)
+            self.tableWidget_contract.setColumnWidth(2, 60)
+            self.tableWidget_contract.setColumnWidth(3, 75)
+            self.tableWidget_contract.setColumnWidth(4, 60)
+            self.tableWidget_contract.setColumnWidth(5, 65)
+            self.contractTable()
+    
+            self.tableWidget_contract.horizontalHeader().setFont(QtGui.QFont("", 8))
+            self.tableWidget_contract.verticalHeader().setVisible(False)
+            self.tableWidget_contract.verticalHeader().setDefaultSectionSize(15)
+            self.tableWidget_contract.setWordWrap(False)
+            self.tableWidget_contract.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
+    
+            contract_delegate = ContractDelegate(self.tableWidget_contract)
+            self.tableWidget_contract.setItemDelegate(contract_delegate)
         except Exception as e:
             QMessageBox.critical(self, "Error", e.args[0])
             self.close()
@@ -368,19 +421,21 @@ class ModelWindow(QtWidgets.QDialog):
                 self.tableWidget_career.blockSignals(False)
                 self.tableWidget_career.verticalHeader().setMinimumSectionSize(22)
             except Exception as e:
+                self.tableWidget_career.blockSignals(False)
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
         else:
             try:
+                self.tableWidget_career.blockSignals(True)
                 self.tableWidget_career.setRowCount(0)
-                self.tableWidget_career.removeRow(0)
                 self.tableWidget_career.insertRow(0)
                 self.tableWidget_career.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
                 self.tableWidget_career.setSpan(0, 0, 1, self.tableWidget_career.columnCount())
                 self.tableWidget_career.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+                self.tableWidget_career.blockSignals(False)
+                self.tableWidget_career.verticalHeader().setMinimumSectionSize(22)
             except Exception as e:
-                print(e)
-                print(e.args)
+                self.tableWidget_career.blockSignals(False)
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
 
@@ -478,11 +533,19 @@ class ModelWindow(QtWidgets.QDialog):
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
         else:
-            self.tableWidget_contact.setRowCount(0)
-            self.tableWidget_contact.insertRow(0)
-            self.tableWidget_contact.setSpan(0, 0, 1, self.tableWidget_contact.columnCount())
-            self.tableWidget_contact.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
-            self.tableWidget_contact.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+            try:
+                self.tableWidget_contact.blockSignals(True)
+                self.tableWidget_contact.setRowCount(0)
+                self.tableWidget_contact.insertRow(0)
+                self.tableWidget_contact.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
+                self.tableWidget_contact.setSpan(0, 0, 1, self.tableWidget_contact.columnCount())
+                self.tableWidget_contact.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+                self.tableWidget_contact.blockSignals(False)
+                self.tableWidget_contact.verticalHeader().setMinimumSectionSize(22)
+            except Exception as e:
+                self.tableWidget_contact.blockSignals(False)
+                QMessageBox.critical(self, "오류", e.args[0])
+                self.close()
 
     def tableCellEdited(self, item):
         try:
@@ -600,6 +663,29 @@ class ModelWindow(QtWidgets.QDialog):
                 QMessageBox.about(self, "알림", flag_massage)
         except Exception as e:
             QMessageBox.critical(self, "오류", e.args[0])
+            
+    def contractTable(self):
+        contract_data = info_contract(self.select_key)
+        if contract_data:
+            self.contact_table_cols = contract_data[0]
+            self.select_info_contact = contract_data[1]
+
+        if self.select_info_contact:
+            pass
+        else:
+            try:
+                self.tableWidget_contract.blockSignals(True)
+                self.tableWidget_contract.setRowCount(0)
+                self.tableWidget_contract.insertRow(0)
+                self.tableWidget_contract.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
+                self.tableWidget_contract.setSpan(0, 0, 1, self.tableWidget_contract.columnCount())
+                self.tableWidget_contract.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+                self.tableWidget_contract.blockSignals(False)
+                self.tableWidget_contract.verticalHeader().setMinimumSectionSize(22)
+            except Exception as e:
+                self.tableWidget_contract.blockSignals(False)
+                QMessageBox.critical(self, "오류", e.args[0])
+                self.close()
 
     def btnExecOrCancel(self, v_exec_type):
         question_msg_text = {"save": "저장", "del": "삭제"}
@@ -705,5 +791,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(621)
+    window = ModelWindow()
     app.exec_()

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1307</width>
+    <width>1305</width>
     <height>733</height>
    </rect>
   </property>
@@ -1181,7 +1181,7 @@ cursor: pointer;</string>
   <widget class="QGroupBox" name="groupBox_career">
    <property name="geometry">
     <rect>
-     <x>300</x>
+     <x>289</x>
      <y>20</y>
      <width>300</width>
      <height>661</height>
@@ -1492,7 +1492,7 @@ cursor: pointer;</string>
   <widget class="QGroupBox" name="groupBox_contact">
    <property name="geometry">
     <rect>
-     <x>625</x>
+     <x>605</x>
      <y>20</y>
      <width>661</width>
      <height>321</height>
@@ -1935,10 +1935,342 @@ cursor: pointer;</string>
     </property>
    </widget>
   </widget>
+  <widget class="QGroupBox" name="groupBox_contract">
+   <property name="geometry">
+    <rect>
+     <x>605</x>
+     <y>352</y>
+     <width>401</width>
+     <height>330</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string/>
+   </property>
+   <widget class="QLabel" name="label_contract_title">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border: none;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#424242;&quot;&gt;계약 정보&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_contract_1">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>175</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QComboBox" name="comboBox_contract_c_month">
+     <property name="geometry">
+      <rect>
+       <x>58</x>
+       <y>39</y>
+       <width>100</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
+     <property name="duplicatesEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="frame">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_contract_gubun">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>43</y>
+       <width>40</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;날짜&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_contract_name">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>13</y>
+       <width>40</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;유형&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_contract_type">
+     <property name="geometry">
+      <rect>
+       <x>58</x>
+       <y>9</y>
+       <width>100</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_contract_amount">
+     <property name="geometry">
+      <rect>
+       <x>58</x>
+       <y>69</y>
+       <width>100</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_contract_position">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>73</y>
+       <width>40</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;금액&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_contract_2">
+    <property name="geometry">
+     <rect>
+      <x>194</x>
+      <y>30</y>
+      <width>197</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QLabel" name="label_contract_data_date">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>43</y>
+       <width>60</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;작성일자&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_contract_ap">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>13</y>
+       <width>60</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;&amp;nbsp;&amp;nbsp;A&amp;nbsp;&amp;nbsp;P&amp;nbsp;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_contract_ap">
+     <property name="geometry">
+      <rect>
+       <x>83</x>
+       <y>9</y>
+       <width>100</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_contract_data_date">
+     <property name="geometry">
+      <rect>
+       <x>83</x>
+       <y>39</y>
+       <width>100</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_contract_insert">
+     <property name="geometry">
+      <rect>
+       <x>123</x>
+       <y>69</y>
+       <width>61</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font: 13px;
+font-weight: bold;
+background-color: rgb(28, 47, 154);
+color: white;
+border-radius: 5px;
+cursor: pointer;</string>
+     </property>
+     <property name="text">
+      <string>추가</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QTableWidget" name="tableWidget_contract">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>137</y>
+      <width>381</width>
+      <height>140</height>
+     </rect>
+    </property>
+    <property name="editTriggers">
+     <set>QAbstractItemView::DoubleClicked</set>
+    </property>
+    <column>
+     <property name="text">
+      <string/>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>계약유형</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>월/년</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>계약금액</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>AP</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>작성일자</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QPushButton" name="btn_contract_all_delete">
+    <property name="geometry">
+     <rect>
+      <x>306</x>
+      <y>286</y>
+      <width>85</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 13px;
+font-weight: bold;
+background-color: rgb(28, 47, 154);
+color: white;
+border-radius: 5px;
+cursor: pointer;</string>
+    </property>
+    <property name="text">
+     <string>일괄 삭제</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_contract_delete">
+    <property name="geometry">
+     <rect>
+      <x>237</x>
+      <y>286</y>
+      <width>61</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 13px;
+font-weight: bold;
+background-color: rgb(28, 47, 154);
+color: white;
+border-radius: 5px;
+cursor: pointer;</string>
+    </property>
+    <property name="text">
+     <string>삭제</string>
+    </property>
+   </widget>
+  </widget>
   <zorder>groupBox_career</zorder>
   <zorder>buttonBox</zorder>
   <zorder>groupBox_profile</zorder>
   <zorder>groupBox_contact</zorder>
+  <zorder>groupBox_contract</zorder>
  </widget>
  <resources/>
  <connections>
