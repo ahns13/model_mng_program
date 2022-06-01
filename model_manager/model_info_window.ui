@@ -1997,7 +1997,7 @@ cursor: pointer;</string>
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="label_contract_gubun">
+    <widget class="QLabel" name="label_contract_c_month">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -2010,10 +2010,10 @@ cursor: pointer;</string>
       <string notr="true">border: none;</string>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;날짜&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;날 짜&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_contract_name">
+    <widget class="QLabel" name="label_contract_type">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -2026,7 +2026,7 @@ cursor: pointer;</string>
       <string notr="true">border: none;</string>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;유형&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;유 형&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_contract_type">
@@ -2048,7 +2048,7 @@ border-radius: 5px;</string>
       <rect>
        <x>58</x>
        <y>69</y>
-       <width>100</width>
+       <width>41</width>
        <height>22</height>
       </rect>
      </property>
@@ -2057,7 +2057,7 @@ border-radius: 5px;</string>
 border-radius: 5px;</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_contract_position">
+    <widget class="QLabel" name="label_contract_amount">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -2070,7 +2070,37 @@ border-radius: 5px;</string>
       <string notr="true">border: none;</string>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;금액&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;금 액&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_contract_amount2">
+     <property name="geometry">
+      <rect>
+       <x>117</x>
+       <y>69</y>
+       <width>41</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_contract_amount_range">
+     <property name="geometry">
+      <rect>
+       <x>105</x>
+       <y>70</y>
+       <width>16</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border: none;</string>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;~&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </widget>
@@ -2102,7 +2132,7 @@ border-radius: 5px;</string>
       <string notr="true">border: none;</string>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;작성일자&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;작성 일자&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_contract_ap">
@@ -2118,7 +2148,7 @@ border-radius: 5px;</string>
       <string notr="true">border: none;</string>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;&amp;nbsp;&amp;nbsp;A&amp;nbsp;&amp;nbsp;P&amp;nbsp;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#575266;&quot;&gt;&amp;nbsp;A&amp;nbsp;&amp;nbsp;&amp;nbsp;P&amp;nbsp;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_contract_ap">

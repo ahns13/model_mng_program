@@ -397,7 +397,7 @@ def shape_exec(cls_model, p_shape):
                 if re_tel_chk is None and "@" not in row_text and ("개월" in row_text or len(re.findall(re.compile("[3|6|1]"), row_text))):
                     amt_type = re.search(re.compile(r"^[\(*가-힣+\)*\s*]+"), row_text)
                     if amt_type is not None:
-                        model_amt_type = re.sub(r" ", "", amt_type.group())
+                        model_amt_type = re.sub(r"\(|\)| ", "", amt_type.group())
                     else:
                         model_amt_type = "해당없음"
 
@@ -405,14 +405,28 @@ def shape_exec(cls_model, p_shape):
                     if len(re_amt):
                         cls_model.model_contract_amt[model_amt_type] = {'amount': []}
                         for amt in re_amt:
-                            month_amt = re.findall(re.compile(r"[0-9][~]*[0-9]{0,3}[.\d]*"), amt)
+                            # month_amt = re.findall(re.compile(r"[0-9][~]*[0-9]{0,3}[.\d]*"), amt)
+                            month_amt = re.findall(re.compile(r"[0-9]{1,4}[.]*[0-9]*"), amt)
                             if len(month_amt):
                                 # if month_amt[0] not in ["3", "6", "1"]:
                                 #     print("계약금액 추출 중 3,6,1 이외의 숫자 추출됨")
                                 #     sys.exit()
                                 # else:
+                                month_amt_val2 = ""
+                                if len(month_amt) == 3:
+                                    first_amt_len = len(str(int(month_amt[1])))
+                                    second_amt_len = len(str(int(month_amt[2])))
+                                    if second_amt_len - first_amt_len > 2:
+                                        month_amt[1] = month_amt[1].ljust(second_amt_len, "0")
+                                    elif first_amt_len - second_amt_len > 2:
+                                        month_amt[2] = str(float(month_amt[2])*10000)
+                                    month_amt_val2 = str(float(month_amt[2]) * 10000) if "." in month_amt[2] else month_amt[2]
+
                                 cls_model.model_contract_amt[model_amt_type]['amount'].append([
-                                    ("12" if month_amt[0] == "1" else month_amt[0]), float(month_amt[1])*10000 if "." in month_amt[1] else month_amt[1], data_ins_date(row_text)
+                                    ("12" if month_amt[0] == "1" else month_amt[0]),
+                                    str(float(month_amt[1])*10000) if "." in month_amt[1] else month_amt[1],
+                                    month_amt_val2,
+                                    data_ins_date(row_text)
                                 ])
                                 data_ins_chk = True
 

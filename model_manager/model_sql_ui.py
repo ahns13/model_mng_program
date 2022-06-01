@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -54,8 +54,8 @@ def condition_career(v_tab_alias, v_srch_dir):
 
 def sql_execute(v_cur_cursor, v_sql, **kwargs):
     """
-    execute_only = False : 필수
-    key = None : 에러 발생 시 점유 해제 필요 시
+    execute_only : 필수
+    key = None : 에러 발생 - 점유 해제 필요 시
     """
     try:
         if "execute_many" in kwargs and kwargs["execute_many"]:
@@ -83,7 +83,7 @@ def sql_execute(v_cur_cursor, v_sql, **kwargs):
 
 def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     cursor = conn.cursor()
-    sql = "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.FOLDER_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT, A.KEY\n"
+    sql =  "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.FOLDER_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT, A.KEY\n"
     sql += "  FROM (\n"
     sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE, B.FOLDER_PATH, A.KEY\n"
     sql += "  FROM MODEL_PROFILE A\n"
@@ -117,7 +117,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
 
 def get_comboBox_list_a(v_combo_type):
     cursor = conn.cursor()
-    sql = "SELECT TABLE_NAME, COMBO_DETAIL_TYPE, COL_NAME, COL_DISPLAY_NAME, COMPARE_OPERATOR, DATA_TYPE\n"
+    sql =  "SELECT TABLE_NAME, COMBO_DETAIL_TYPE, COL_NAME, COL_DISPLAY_NAME, COMPARE_OPERATOR, DATA_TYPE\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = '" + v_combo_type + "'\n"
     sql += " ORDER BY SORT_ORDER"
@@ -145,7 +145,7 @@ def get_comboBox_list_a(v_combo_type):
 def get_comboBox_list_career():
     # DATA_TYPE : only string
     cursor = conn.cursor()
-    sql = "SELECT COL_DISPLAY_NAME\n"
+    sql =  "SELECT COL_DISPLAY_NAME\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = 'CAREER'\n"
     sql += "   AND COMBO_DETAIL_TYPE = 'DATA'\n"
@@ -189,7 +189,7 @@ def flagStatus(v_key, v_status):
 # model 상세 정보
 def info_profile(v_key):
     cursor = conn.cursor()
-    sql = "SELECT name, real_name, birth_date, height, weight, size_top, size_pants, size_shoe, size_other\n"
+    sql =  "SELECT name, real_name, birth_date, height, weight, size_top, size_pants, size_shoe, size_other\n"
     sql += "     , tel, email, insta_id, model_desc, data_date\n"
     sql += "  FROM MODEL_PROFILE\n"
     sql += " WHERE KEY = '" + str(v_key) + "'"
@@ -200,7 +200,7 @@ def info_profile(v_key):
     else:
         result_profile = {col: "" for idx, col in enumerate(columns)}
 
-    sql = "SELECT no, nvl(hobbynspec, '') as hobbynspec\n"
+    sql =  "SELECT no, nvl(hobbynspec, '') as hobbynspec\n"
     sql += "  FROM HOBBYNSPEC\n"
     sql += " WHERE KEY = '" + str(v_key) + "'"
     sql += " ORDER BY no"
@@ -252,7 +252,7 @@ def updateHobbynspec(v_update_tuple):
 
 def info_career(v_key):
     cursor = conn.cursor()
-    sql = "SELECT a.career_type, a.detail_gubun, to_char(a.no) as no, a.careers\n"
+    sql =  "SELECT a.career_type, a.detail_gubun, to_char(a.no) as no, a.careers\n"
     sql += "  FROM CAREER A, COMBO_MAP_LIST B\n"
     sql += " WHERE A.CAREER_TYPE = B.COL_NAME\n"
     sql += "   AND A.KEY = '" + str(v_key) + "'\n"
@@ -316,7 +316,7 @@ def getCMCodeList(v_g_code):
 
 def info_contact(v_key):
     cursor = conn.cursor()
-    sql = "SELECT to_char(no) no, name, sf_code_nm('CONTACT_GUBUN', gubun) as gubun, position, mng_gubun, tel, email, data_date\n"
+    sql =  "SELECT to_char(no) no, name, sf_code_nm('CONTACT_GUBUN', gubun) as gubun, position, mng_gubun, tel, email, data_date\n"
     sql += "  FROM CONTACT\n"
     sql += " WHERE KEY = '" + str(v_key) + "'\n"
     sql += " ORDER BY NO"
@@ -386,14 +386,57 @@ def getMaxKeyOfProfile():
 
 def info_contract(v_key):
     cursor = conn.cursor()
-    sql = "SELECT type, c_month, amount, ap, data_date\n"
-    sql += "  FROM CNTR_AMOUNT\n"
-    sql += " WHERE KEY = '" + str(v_key) + "'\n"
-    sql += " ORDER BY type, c_month"
+    sql =  "SELECT A.type, sf_code_nm('C_MONTH', A.c_month) as c_month, A.amount||NVL2(A.amount2,'~'||A.amount2,'') as amount" \
+           ", B.ap, A.data_date, A.amount2\n" \
+           "     , count(1) over (partition by A.type) as merge_col_cnt\n" \
+           "     , row_number() over (partition by A.type order by to_number(A.c_month)) as r_no\n" \
+           "  FROM CNTR_AMOUNT A, CNTR_AMOUNT_AP B\n" \
+           " WHERE A.KEY = B.KEY(+)\n" \
+           "   AND A.KEY = '" + str(v_key) + "'\n" \
+           " ORDER BY A.TYPE, TO_NUMBER(A.C_MONTH)"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
     columns = [d[0].lower() for d in cursor.description]
     cursor.close()
     return [columns, result]
+
+
+def updateContract(v_update_tuple):
+    """
+    v_update_tuple
+    INSERT : (mod_type, [{key, type, c_month, amount, amount2, ap, data_date}])
+    UPDATE : (mod_type, [{key, type, c_month, amount, amount2, ap, data_date}])
+    DELETE : (mod_type, [{key, type, c_month}])
+    mod_type: INSERT/UPDATE/DELETE
+    """
+    v_data_list = v_update_tuple[1]
+    v_key = v_data_list[0]["key"]
+    cursor = conn.cursor()
+    if v_update_tuple[0] == "INSERT":
+        sql = "INSERT INTO CNTR_AMOUNT (KEY, TYPE, C_MONTH, AMOUNT, AMOUNT2, AP, DATA_DATE, " \
+              "INSERT_DATE, INSERT_EMP, UPDATE_DATE, UPDATE_EMP)\n VALUES" \
+              "(:key, :type, :c_month, :amount, :amount2, :ap, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
+    elif v_update_tuple[0] == "UPDATE":
+        update_data = v_data_list[0]
+        first_check = 0
+        list_start_val = 2 if update_data["month_update"] else 3
+        sql = "UPDATE CNTR_AMOUNT SET "
+        for c_idx, col in enumerate(list(update_data.keys())[list_start_val:]):  # key, type, [c_month] 제외
+            sql += (", " if first_check else "") + col+" = :"+col
+            first_check += 1
+        sql += "\n"
+        sql += " WHERE KEY = :key AND TYPE = :type"
+        if not update_data["month_update"]:
+            sql += " AND C_MONTH = :c_month"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=update_data)
+    elif v_update_tuple[0] == "DELETE":
+        sql = "DELETE CNTR_AMOUNT WHERE KEY = :key AND TYPE = :type AND C_MONTH = :c_month"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+    elif v_update_tuple[0] == "ALL_DELETE":
+        sql = "DELETE CNTR_AMOUNT WHERE KEY = '" + v_key + "'"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
+    cursor.close()
+    return True
 
 
 if __name__ == "__main__":

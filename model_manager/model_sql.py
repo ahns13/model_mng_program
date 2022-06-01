@@ -183,7 +183,7 @@ def contact_ins(v_cls_model, v_key_value):
 
 # contract_amount insert
 def contract_amount_ins(v_cls_model, v_key_value):
-    sql = "INSERT INTO CNTR_AMOUNT(KEY, TYPE, C_MONTH, AMOUNT, DATA_DATE, AP, " + \
+    sql = "INSERT INTO CNTR_AMOUNT(KEY, TYPE, C_MONTH, AMOUNT, AMOUNT2, DATA_DATE, AP, " + \
           "INSERT_DATE, INSERT_EMP, UPDATE_DATE, UPDATE_EMP) VALUES(" + \
           str(v_key_value) + ", " + get_bind_cols(5) + " SYSDATE, 'admin', SYSDATE, 'admin')"
 
@@ -194,7 +194,7 @@ def contract_amount_ins(v_cls_model, v_key_value):
         for type_key in amount_data.keys():
             if type_key == "amount":
                 for amt in amount_data[type_key]:
-                    row_data.append([key, amt[0], amt[1], amt[2]])  # month별 금액
+                    row_data.append([key, amt[0], amt[1], amt[2], amt[3]])  # month별 금액
             else:
                 for el in row_data:
                     el.append(amount_data[type_key])  # AP

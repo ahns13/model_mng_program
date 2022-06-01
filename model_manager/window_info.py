@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHobbynspec, get_comboBox_list_career, \
     info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile, \
-    info_contract
+    info_contract, updateContract
 from model_functions import *
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
@@ -51,7 +51,7 @@ class ContractDelegate(QtWidgets.QStyledItemDelegate):
         if index.column() in [2,4,5]:
             option.displayAlignment = QtCore.Qt.AlignCenter
         elif index.column() in [3]:
-            option.displayAlignment = QtCore.Qt.AlignRight
+            option.displayAlignment = QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter
 
     # def createEditor(self, parent, option, index):
     #     if index.column() in [2,4,5,6,7,8]:
@@ -83,13 +83,19 @@ class ModelWindow(QtWidgets.QDialog):
             "UPDATE": range(1, 5),
             "DELETE": range(1, 4)
         }
+        self.contract_data_rng_idx = 4  # 데이터 포함 제한 index
+        self.select_info_contract = []
+        self.contract_table_cols = []
 
-        # table_set_info
-        self.table_combobox_idx = {
-            "contact": [3]
+        self.combobox_idx_in_data = {
+            "contact": [2],
+            "contract": [1]
         }
         self.table_no_edit_column = {
             "contact": ["no"]
+        }
+        self.table_merge = {
+            "contract": {"col": [1, 4]}
         }
 
         # model_profile
@@ -198,7 +204,8 @@ class ModelWindow(QtWidgets.QDialog):
             self.close()
 
         # contract
-        self.lineEdit_contract_type.setPlaceholderText("필수 입력 항목")
+        self.lineEdit_contract_type.setPlaceholderText("해당없음")
+        self.lineEdit_contract_amount.setPlaceholderText("기준")
         try:
             contract_c_month_cd_data = getCMCodeList("C_MONTH")
             self.comboBox_contract_c_month_list = contract_c_month_cd_data[0]
@@ -226,6 +233,7 @@ class ModelWindow(QtWidgets.QDialog):
     
             contract_delegate = ContractDelegate(self.tableWidget_contract)
             self.tableWidget_contract.setItemDelegate(contract_delegate)
+            self.tableWidget_contract.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         except Exception as e:
             QMessageBox.critical(self, "Error", e.args[0])
             self.close()
@@ -404,15 +412,7 @@ class ModelWindow(QtWidgets.QDialog):
 
                 for m_idx, m_row in enumerate(career_data_mod):
                     self.tableWidget_career.insertRow(m_idx)
-
-                    cellWidget = QWidget()
-                    layoutCB = QHBoxLayout(cellWidget)
-                    chk_career_del = QCheckBox()
-                    layoutCB.addWidget(chk_career_del)
-                    layoutCB.setAlignment(QtCore.Qt.AlignCenter)
-                    layoutCB.setContentsMargins(0, 0, 0, 0)
-                    cellWidget.setLayout(layoutCB)
-                    self.tableWidget_career.setCellWidget(m_idx, 0, cellWidget)
+                    self.tableWidget_career.setCellWidget(m_idx, 0, self.tableCheckBox())
 
                     for r_idx, r_data in enumerate(m_row):
                         cell_item = QTableWidgetItem()
@@ -501,18 +501,10 @@ class ModelWindow(QtWidgets.QDialog):
 
                 for m_idx, m_row in enumerate(self.select_info_contact):
                     self.tableWidget_contact.insertRow(m_idx)
-
-                    cellWidget = QWidget()
-                    layoutCB = QHBoxLayout(cellWidget)
-                    chk_contact_del = QCheckBox()
-                    layoutCB.addWidget(chk_contact_del)
-                    layoutCB.setAlignment(QtCore.Qt.AlignCenter)
-                    layoutCB.setContentsMargins(0, 0, 0, 0)
-                    cellWidget.setLayout(layoutCB)
-                    self.tableWidget_contact.setCellWidget(m_idx, 0, cellWidget)
+                    self.tableWidget_contact.setCellWidget(m_idx, 0, self.tableCheckBox())
 
                     for r_idx, r_data in enumerate(m_row):
-                        if r_idx+1 in self.table_combobox_idx["contact"]:  # contact의 gubun[구분]
+                        if r_idx in self.combobox_idx_in_data["contact"]:  # contact의 gubun[구분]
                             inComboBox = QComboBox()
                             inComboBox.addItems(self.comboBox_contact_gubun_list)
                             inComboBox.setCurrentText(r_data)
@@ -602,7 +594,7 @@ class ModelWindow(QtWidgets.QDialog):
                             for col_idx, col in enumerate(self.contact_table_cols):
                                 if col in self.table_no_edit_column["contact"]:
                                     pass
-                                elif col_idx+1 in self.table_combobox_idx["contact"]:
+                                elif col_idx in self.combobox_idx_in_data["contact"]:
                                     contact_data[col] = self.comboBox_contact_gubun_map_data[self.comboBox_contact_gubun.currentText()]
                                 else:
                                     contact_data[col] = getattr(self, "lineEdit_contact_"+col).text()
@@ -614,7 +606,7 @@ class ModelWindow(QtWidgets.QDialog):
                             for col_idx, col in enumerate(self.contact_table_cols):
                                 if col in self.table_no_edit_column["contact"]:
                                     pass
-                                elif col_idx + 1 in self.table_combobox_idx["contact"]:
+                                elif col_idx in self.combobox_idx_in_data["contact"]:
                                     self.comboBox_contact_gubun.setCurrentIndex(0)
                                 else:
                                     getattr(self, "lineEdit_contact_"+col).setText("")
@@ -636,7 +628,7 @@ class ModelWindow(QtWidgets.QDialog):
                                     original_data = self.select_info_contact[chk_idx]
                                     changed_data = []
                                     for col_idx in list(range(self.tableWidget_contact.columnCount()))[1:]:
-                                        if col_idx in self.table_combobox_idx["contact"]:
+                                        if col_idx-1 in self.combobox_idx_in_data["contact"]:
                                             combo_text = self.tableWidget_contact.cellWidget(chk_idx, col_idx).currentText()
                                             changed_data.append(self.comboBox_contact_gubun_map_data[combo_text])
                                         else:
@@ -667,11 +659,34 @@ class ModelWindow(QtWidgets.QDialog):
     def contractTable(self):
         contract_data = info_contract(self.select_key)
         if contract_data:
-            self.contact_table_cols = contract_data[0]
-            self.select_info_contact = contract_data[1]
+            self.contract_table_cols = contract_data[0]
+            self.select_info_contract = contract_data[1]
 
-        if self.select_info_contact:
-            pass
+        if self.select_info_contract:
+            try:
+                self.tableWidget_contract.blockSignals(True)
+                self.tableWidget_contract.setRowCount(0)
+
+                r_no_idx = self.contract_table_cols.index("r_no")
+                merge_col_idx = self.contract_table_cols.index("merge_col_cnt")
+                for m_idx, m_row in enumerate(self.select_info_contract):
+                    self.tableWidget_contract.insertRow(m_idx)
+                    self.tableWidget_contract.setCellWidget(m_idx, 0, self.tableCheckBox())
+
+                    for r_idx, r_data in enumerate(m_row):
+                        if r_idx <= self.contract_data_rng_idx:
+                            cell_item = QTableWidgetItem()
+                            cell_item.setText(str(r_data) if r_data else "")
+                            self.tableWidget_contract.setItem(m_idx, r_idx + 1, cell_item)
+                        if m_row[r_no_idx] == 1:
+                            if r_idx in self.table_merge["contract"]["col"]:
+                                self.tableWidget_contract.setSpan(m_idx, r_idx, m_row[merge_col_idx], 1)
+
+                self.tableWidget_contract.blockSignals(False)
+                self.tableWidget_contract.verticalHeader().setMinimumSectionSize(22)
+            except Exception as e:
+                QMessageBox.critical(self, "오류", e.args[0])
+                self.close()
         else:
             try:
                 self.tableWidget_contract.blockSignals(True)
@@ -686,6 +701,70 @@ class ModelWindow(QtWidgets.QDialog):
                 self.tableWidget_contract.blockSignals(False)
                 QMessageBox.critical(self, "오류", e.args[0])
                 self.close()
+
+    def contractDataExec(self, v_mod_type):
+        data_list = []
+        try:
+            if self.flag_status:
+                if v_mod_type == "INSERT":
+                    if self.btnExecOrCancel("save") == QMessageBox.Yes:
+                        if self.column_value_type_check("contract"):
+                            contract_data = {"key": self.select_key}
+                            for col_idx, col in enumerate(self.contract_table_cols):
+                                if col_idx in self.combobox_idx_in_data["contract"]:
+                                    contract_data[col] = self.comboBox_contract_c_month_map_data[self.comboBox_contract_c_month.currentText()]
+                                elif col == "type":
+                                    contract_data[col] = nvl(self.lineEdit_contract_type.text(), self.lineEdit_contract_type.placeholderText())
+                                else:
+                                    try:
+                                        contract_data[col] = getattr(self, "lineEdit_contract_"+col).text()
+                                    except AttributeError:
+                                        continue
+
+                            data_list = [contract_data]
+                            if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateContract, v_mod_type, data_list):
+                                conn.commit()
+                                self.contractTable()
+                            for col_idx, col in enumerate(self.contract_table_cols):
+                                if col_idx in self.combobox_idx_in_data["contract"]:
+                                    self.comboBox_contract_c_month.setCurrentIndex(0)
+                                else:
+                                    try:
+                                        getattr(self, "lineEdit_contract_"+col).setText("")
+                                    except AttributeError:
+                                        continue
+
+                elif v_mod_type == "ALL_DELETE":
+                    if self.select_info_contract:
+                        if self.btnExecOrCancel("del") == QMessageBox.Yes:
+                            if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateContract, v_mod_type, [{"key": self.select_key}]):
+                                conn.commit()
+                                self.contractTable()
+                    else:
+                        QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
+                else:  # DELETE
+                    checked_list = getCheckListFromTable(self.tableWidget_contract, QCheckBox)
+                    if checked_list:
+                        if self.btnExecOrCancel("save" if v_mod_type == "UPDATE" else "del") == QMessageBox.Yes:
+                            for chk_idx in checked_list:
+                                contract_data = {"key": self.select_key}
+                                if v_mod_type == "DELETE":
+                                    for idx, col in enumerate(self.contract_table_cols):
+                                        if col == "type":
+                                            contract_data[col] = self.select_info_contract[chk_idx][idx]
+                                        elif col == "c_month":
+                                            contract_data[col] = self.comboBox_contract_c_month_map_data[self.comboBox_contract_c_month.currentText()]
+                                    data_list.append(contract_data)
+
+                            if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateContract, v_mod_type, data_list):
+                                conn.commit()
+                                self.contractTable()
+                    else:
+                        QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
+            else:
+                QMessageBox.about(self, "알림", flag_massage)
+        except Exception as e:
+            QMessageBox.critical(self, "오류", e.args[0])
 
     def btnExecOrCancel(self, v_exec_type):
         question_msg_text = {"save": "저장", "del": "삭제"}
@@ -713,7 +792,8 @@ class ModelWindow(QtWidgets.QDialog):
                 except ValueError:
                     pass
 
-                obj_label = getattr(self, "label_" + v_type_gubun + "_" + data[0])
+                object_item_name = "amount" if v_type_gubun == "contract" and data[0] == "amount2" else data[0]
+                obj_label = getattr(self, "label_" + v_type_gubun + "_" + object_item_name)
                 label_text = QtGui.QTextDocumentFragment.fromHtml(obj_label.text()).toPlainText()
 
                 if data[0] == "name" and len(lineEdit_input_text.replace(" ", "")) <= 1:
@@ -722,15 +802,16 @@ class ModelWindow(QtWidgets.QDialog):
                     break
 
                 if check_value_type == data[1]:
-                    if check_value_type == "float":
-                        string_length = data[2].split(",")
-                        divided_text = re.findall("[0-9]+", lineEdit_input_text)
-                        if len(divided_text[0]) > int(string_length[0]):
-                            message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 정수 부분 제한 자리수보다 큰 값을 입력하였습니다."])
-                        elif len(divided_text[1]) > int(string_length[1]):
-                            message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 소수점 부분 제한 자리수보다 큰 값을 입력하였습니다."])
-                    elif len(lineEdit_input_text) > int(data[2]):
-                        message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 제한된 길이를 초과하였습니다."])
+                    if data[2] is not None:
+                        if check_value_type == "float":
+                            string_length = data[2].split(",")
+                            divided_text = re.findall("[0-9]+", lineEdit_input_text)
+                            if len(divided_text[0]) > int(string_length[0]):
+                                message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 정수 부분 제한 자리수보다 큰 값을 입력하였습니다."])
+                            elif len(divided_text[1]) > int(string_length[1]):
+                                message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 소수점 부분 제한 자리수보다 큰 값을 입력하였습니다."])
+                        elif len(lineEdit_input_text) > int(data[2]):
+                            message_list.append([obj_lineEdit, label_text.replace(" ", "") + "의 입력된 값이 제한된 길이를 초과하였습니다."])
                     else:
                         pass
                 elif data[1] == "int" and check_value_type == "float":
@@ -755,6 +836,17 @@ class ModelWindow(QtWidgets.QDialog):
                     if obj_lineEdit.palette().windowText().color().name() == color_set["name"]:
                         obj_lineEdit.setStyleSheet("color: #000000")
             return True
+
+    def tableCheckBox(self):
+        cellWidget = QWidget()
+        layoutCB = QHBoxLayout(cellWidget)
+        checkBox = QCheckBox()
+        layoutCB.addWidget(checkBox)
+        layoutCB.setAlignment(QtCore.Qt.AlignCenter)
+        layoutCB.setContentsMargins(0, 0, 0, 0)
+        cellWidget.setLayout(layoutCB)
+
+        return cellWidget
 
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
@@ -791,5 +883,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow()
+    window = ModelWindow(521)
     app.exec_()
