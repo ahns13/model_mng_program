@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -412,23 +412,44 @@ def updateContract(v_update_tuple):
     v_key = v_data_list[0]["key"]
     cursor = conn.cursor()
     if v_update_tuple[0] == "INSERT":
-        sql = "INSERT INTO CNTR_AMOUNT (KEY, TYPE, C_MONTH, AMOUNT, AMOUNT2, AP, DATA_DATE, " \
+        sql = "INSERT INTO CNTR_AMOUNT (KEY, TYPE, C_MONTH, AMOUNT, AMOUNT2, DATA_DATE, " \
               "INSERT_DATE, INSERT_EMP, UPDATE_DATE, UPDATE_EMP)\n VALUES" \
-              "(:key, :type, :c_month, :amount, :amount2, :ap, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
+              "(:key, :type, sf_code_cd('C_MONTH', :c_month), :amount, :amount2, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
+
+        if v_data_list[1]["ap"]:
+            sql = "MERGE INTO CNTR_AMOUNT_AP\n" \
+                  "  USING DUAL\n" \
+                  "     ON (KEY = :key)\n" \
+                  " WHEN MATCHED THEN\n" \
+                  "   UPDATE SET AP = :ap\n" \
+                  " WHEN NOT MATCHED THEN\n" \
+                  "   INSERT VALUES (:key, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
     elif v_update_tuple[0] == "UPDATE":
         update_data = v_data_list[0]
         first_check = 0
-        list_start_val = 2 if update_data["month_update"] else 3
-        sql = "UPDATE CNTR_AMOUNT SET "
-        for c_idx, col in enumerate(list(update_data.keys())[list_start_val:]):  # key, type, [c_month] 제외
-            sql += (", " if first_check else "") + col+" = :"+col
-            first_check += 1
-        sql += "\n"
-        sql += " WHERE KEY = :key AND TYPE = :type"
-        if not update_data["month_update"]:
-            sql += " AND C_MONTH = :c_month"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=update_data)
+        update_list = list(update_data.keys())[3:]  # key, type, c_month 제외
+        if update_list:
+            sql = "UPDATE CNTR_AMOUNT SET "
+            for c_idx, col in enumerate(update_list):
+                if update_data[col] is not None:
+                    sql += (", " if first_check else "") + col+" = :"+col
+                    first_check += 1
+            sql += "\n"
+            sql += " WHERE KEY = :key AND TYPE = :type AND C_MONTH = sf_code_cd('C_MONTH', :c_month)"
+
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=update_data)
+
+        if v_data_list[1]["ap"] is not None:
+            sql = "MERGE INTO CNTR_AMOUNT_AP\n" \
+                  "  USING DUAL\n" \
+                  "     ON (KEY = :key)\n" \
+                  " WHEN MATCHED THEN\n" \
+                  "   UPDATE SET AP = :ap\n" \
+                  " WHEN NOT MATCHED THEN\n" \
+                  "   INSERT VALUES (:key, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CNTR_AMOUNT WHERE KEY = :key AND TYPE = :type AND C_MONTH = :c_month"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)

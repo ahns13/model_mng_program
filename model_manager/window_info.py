@@ -86,6 +86,10 @@ class ModelWindow(QtWidgets.QDialog):
         self.contract_data_rng_idx = 4  # 데이터 포함 제한 index
         self.select_info_contract = []
         self.contract_table_cols = []
+        self.contract_update_org_data = [{}, {}]  # other, ap
+        self.lineEdit_disable_col = {
+            "contract": ["type", "c_month"]
+        }
 
         self.combobox_idx_in_data = {
             "contact": [2],
@@ -206,6 +210,7 @@ class ModelWindow(QtWidgets.QDialog):
         # contract
         self.lineEdit_contract_type.setPlaceholderText("해당없음")
         self.lineEdit_contract_amount.setPlaceholderText("기준")
+        self.contract_table_selected_index = None
         try:
             contract_c_month_cd_data = getCMCodeList("C_MONTH")
             self.comboBox_contract_c_month_list = contract_c_month_cd_data[0]
@@ -214,6 +219,7 @@ class ModelWindow(QtWidgets.QDialog):
             self.comboBox_contract_c_month_map_data = contract_c_month_cd_data[1]
 
             self.btn_contract_insert.clicked.connect(lambda: self.contractDataExec("INSERT"))
+            self.btn_contract_display.clicked.connect(lambda: self.contractDataExec("DISPLAY"))
             self.btn_contract_delete.clicked.connect(lambda: self.contractDataExec("DELETE"))
             self.btn_contract_all_delete.clicked.connect(lambda: self.contractDataExec("ALL_DELETE"))
     
@@ -672,15 +678,16 @@ class ModelWindow(QtWidgets.QDialog):
                 for m_idx, m_row in enumerate(self.select_info_contract):
                     self.tableWidget_contract.insertRow(m_idx)
                     self.tableWidget_contract.setCellWidget(m_idx, 0, self.tableCheckBox())
-
                     for r_idx, r_data in enumerate(m_row):
                         if r_idx <= self.contract_data_rng_idx:
                             cell_item = QTableWidgetItem()
                             cell_item.setText(str(r_data) if r_data else "")
-                            self.tableWidget_contract.setItem(m_idx, r_idx + 1, cell_item)
-                        if m_row[r_no_idx] == 1:
-                            if r_idx in self.table_merge["contract"]["col"]:
-                                self.tableWidget_contract.setSpan(m_idx, r_idx, m_row[merge_col_idx], 1)
+                        self.tableWidget_contract.setItem(m_idx, r_idx+1, cell_item)
+                # table merge
+                for m_idx, m_row in enumerate(self.select_info_contract):
+                    for r_idx, r_data in enumerate(m_row):
+                        if m_row[r_no_idx] == 1 and r_idx+1 in self.table_merge["contract"]["col"]:
+                            self.tableWidget_contract.setSpan(m_idx, r_idx+1, m_row[merge_col_idx], 1)
 
                 self.tableWidget_contract.blockSignals(False)
                 self.tableWidget_contract.verticalHeader().setMinimumSectionSize(22)
@@ -708,32 +715,7 @@ class ModelWindow(QtWidgets.QDialog):
             if self.flag_status:
                 if v_mod_type == "INSERT":
                     if self.btnExecOrCancel("save") == QMessageBox.Yes:
-                        if self.column_value_type_check("contract"):
-                            contract_data = {"key": self.select_key}
-                            for col_idx, col in enumerate(self.contract_table_cols):
-                                if col_idx in self.combobox_idx_in_data["contract"]:
-                                    contract_data[col] = self.comboBox_contract_c_month_map_data[self.comboBox_contract_c_month.currentText()]
-                                elif col == "type":
-                                    contract_data[col] = nvl(self.lineEdit_contract_type.text(), self.lineEdit_contract_type.placeholderText())
-                                else:
-                                    try:
-                                        contract_data[col] = getattr(self, "lineEdit_contract_"+col).text()
-                                    except AttributeError:
-                                        continue
-
-                            data_list = [contract_data]
-                            if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateContract, v_mod_type, data_list):
-                                conn.commit()
-                                self.contractTable()
-                            for col_idx, col in enumerate(self.contract_table_cols):
-                                if col_idx in self.combobox_idx_in_data["contract"]:
-                                    self.comboBox_contract_c_month.setCurrentIndex(0)
-                                else:
-                                    try:
-                                        getattr(self, "lineEdit_contract_"+col).setText("")
-                                    except AttributeError:
-                                        continue
-
+                        self.contract_insert_stmt(v_mod_type)
                 elif v_mod_type == "ALL_DELETE":
                     if self.select_info_contract:
                         if self.btnExecOrCancel("del") == QMessageBox.Yes:
@@ -742,10 +724,46 @@ class ModelWindow(QtWidgets.QDialog):
                                 self.contractTable()
                     else:
                         QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
+                elif v_mod_type == "DISPLAY":  # DISPLAY: 계약정보에 선택 데이터 input
+                    checked_list = getCheckListFromTable(self.tableWidget_contract, QCheckBox)
+                    if len(checked_list) > 1:
+                        QMessageBox.about(self, "알림", "하나의 데이터만 선택하세요.")
+                    else:
+                        if self.btnExecOrCancel("update") == QMessageBox.Yes:
+                            QMessageBox.about(self, "알림", "계약 정보 상단에 선택한 값이 반영되었습니다.\n값을 수정 후 저장 버튼을 클릭하세요.")
+                            self.contract_table_selected_index = checked_list[0]
+                            self.btn_contract_insert.setText("저장")
+                            selected_data = self.select_info_contract[checked_list[0]]
+                            contract_data = {"key": self.select_key}
+                            contract_data_ap = {"key": self.select_key}
+                            for col_idx, col in enumerate(self.contract_table_cols):
+                                if col_idx in self.combobox_idx_in_data["contract"]:
+                                    getattr(self, "comboBox_contract_" + col).setCurrentText(selected_data[col_idx])
+                                    contract_data[col] = selected_data[col_idx] if selected_data[col_idx] is not None else ''
+                                else:
+                                    try:
+                                        getattr(self, "lineEdit_contract_"+col).setText(selected_data[col_idx])
+
+                                        if col == "ap":
+                                            contract_data_ap[col] = selected_data[col_idx] if selected_data[col_idx] is not None else ''
+                                        else:
+                                            contract_data[col] = selected_data[col_idx] if selected_data[col_idx] is not None else ''
+                                    except AttributeError:
+                                        continue
+                            self.contract_update_org_data = [contract_data, contract_data_ap]  # 테이블 수정 시 원값 저장 변수
+                            self.lineEditDisable("contract", True)
+                            self.btn_contract_insert.clicked.disconnect()
+                            self.btn_contract_insert.clicked.connect(lambda: self.contractDataExec("UPDATE"))
+                elif v_mod_type == "UPDATE":
+                    if self.contract_insert_stmt(v_mod_type):
+                        self.lineEditDisable("contract", False)
+                        self.btn_contract_insert.clicked.disconnect()
+                        self.btn_contract_insert.clicked.connect(lambda: self.contractDataExec("INSERT"))
+                        self.btn_contract_insert.setText("추가")
                 else:  # DELETE
                     checked_list = getCheckListFromTable(self.tableWidget_contract, QCheckBox)
                     if checked_list:
-                        if self.btnExecOrCancel("save" if v_mod_type == "UPDATE" else "del") == QMessageBox.Yes:
+                        if self.btnExecOrCancel("del") == QMessageBox.Yes:
                             for chk_idx in checked_list:
                                 contract_data = {"key": self.select_key}
                                 if v_mod_type == "DELETE":
@@ -766,10 +784,85 @@ class ModelWindow(QtWidgets.QDialog):
         except Exception as e:
             QMessageBox.critical(self, "오류", e.args[0])
 
-    def btnExecOrCancel(self, v_exec_type):
-        question_msg_text = {"save": "저장", "del": "삭제"}
-        reply = QMessageBox.question(self, " ", question_msg_text[v_exec_type] + "하시겠습니까?",
-                                     QMessageBox.Yes | QMessageBox.No)
+    def contract_insert_stmt(self, v_mod_type):
+        # contract insert / update
+        if self.column_value_type_check("contract"):
+            contract_data = {"key": self.select_key}
+            contract_data_ap = {"key": self.select_key}
+
+            for col_idx, col in enumerate(self.contract_table_cols):
+                if col_idx in self.combobox_idx_in_data["contract"]:
+                    contract_data[col] = getattr(self, "comboBox_contract_" + col).currentText()
+                elif col == "type":
+                    contract_data[col] = nvl(self.lineEdit_contract_type.text(), self.lineEdit_contract_type.placeholderText())
+                elif col == "ap":
+                    input_text = self.lineEdit_contract_ap.text()
+                    contract_data_ap[col] = input_text
+                else:
+                    try:
+                        input_text = getattr(self, "lineEdit_contract_" + col).text()
+                        contract_data[col] = input_text
+                    except AttributeError:
+                        continue
+
+            data_list = [contract_data, contract_data_ap]
+            value_changed = 0 if self.contract_update_org_data[0] == data_list[0] else 1
+
+            # ap값 비교 체크
+            ap_change_check = False
+            if v_mod_type == "UPDATE" and self.contract_update_org_data[1]["ap"] != data_list[1]["ap"]:
+                ap_change_check = True
+            elif v_mod_type == "INSERT":
+                original_ap_val = ""
+                for data in self.select_info_contract:
+                    if data[self.contract_table_cols.index("type")] == data_list[0]["type"]:
+                        original_ap_val = data[self.contract_table_cols.index("ap")]
+                        break
+                if original_ap_val != data_list[1]["ap"]:
+                    ap_change_check = True
+
+            if ap_change_check:
+                if self.btnExecOrCancel("AP값이 저장된 값과 다릅니다. 변경하시겠습니까?") == QMessageBox.Yes:
+                    value_changed += 1
+                else:
+                    data_list[1]["ap"] = None
+            else:
+                data_list[1]["ap"] = None
+
+            if value_changed == 0:
+                QMessageBox.about(self, "알림", "변경된 내용이 없습니다.")
+                return False
+
+            if v_mod_type == "UPDATE":  # 값 검증
+                delete_key_list = []
+                for key in data_list[0].keys():
+                    if key != "key" and key not in self.lineEdit_disable_col["contract"]:
+                        if data_list[0][key] == self.contract_update_org_data[0][key]:
+                            delete_key_list.append(key)
+                for key in delete_key_list:
+                    del data_list[0][key]
+
+            ex_msg = [True, "추가 완료.", "데이터 추가 오류 발생"] if v_mod_type == "INSERT" else [True, "수정 완료.", "데이터 수정 오류 발생"]
+            if self.updateExec(ex_msg, updateContract, v_mod_type, data_list):
+                conn.commit()
+                self.contractTable()
+            for col_idx, col in enumerate(self.contract_table_cols):
+                if col_idx in self.combobox_idx_in_data["contract"]:
+                    self.comboBox_contract_c_month.setCurrentIndex(0)
+                else:
+                    try:
+                        getattr(self, "lineEdit_contract_" + col).setText("")
+                    except AttributeError:
+                        continue
+            return True
+
+    def btnExecOrCancel(self, v_exec_type_or_msg):
+        question_msg_text = {"save": "저장", "del": "삭제", "update": "수정"}
+        if v_exec_type_or_msg in question_msg_text:
+            reply = QMessageBox.question(self, " ", question_msg_text[v_exec_type_or_msg] + "하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No)
+        else:
+            reply = QMessageBox.question(self, " ", v_exec_type_or_msg, QMessageBox.Yes | QMessageBox.No)
         return reply
 
     def column_value_type_check(self, v_type_gubun, v_column=None):
@@ -848,6 +941,13 @@ class ModelWindow(QtWidgets.QDialog):
 
         return cellWidget
 
+    def lineEditDisable(self, v_type, v_disabled):
+        for col in self.lineEdit_disable_col[v_type]:
+            if self.contract_table_cols.index(col) in self.combobox_idx_in_data["contract"]:
+                getattr(self, "comboBox_contract_" + col).setDisabled(v_disabled)
+            else:
+                getattr(self, "lineEdit_" + v_type + "_" + col).setDisabled(v_disabled)
+
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
             pass
@@ -883,5 +983,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(521)
+    window = ModelWindow(567)
     app.exec_()
