@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -391,7 +391,7 @@ def info_contract(v_key):
            "     , count(1) over (partition by A.type) as merge_col_cnt\n" \
            "     , row_number() over (partition by A.type order by to_number(A.c_month)) as r_no\n" \
            "  FROM CNTR_AMOUNT A, CNTR_AMOUNT_AP B\n" \
-           " WHERE A.KEY = B.KEY(+)\n" \
+           " WHERE A.KEY = B.KEY(+) AND A.TYPE = B.TYPE(+)\n" \
            "   AND A.KEY = '" + str(v_key) + "'\n" \
            " ORDER BY A.TYPE, TO_NUMBER(A.C_MONTH)"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
@@ -420,11 +420,11 @@ def updateContract(v_update_tuple):
         if v_data_list[1]["ap"]:
             sql = "MERGE INTO CNTR_AMOUNT_AP\n" \
                   "  USING DUAL\n" \
-                  "     ON (KEY = :key)\n" \
+                  "     ON (KEY = :key AND TYPE = :type)\n" \
                   " WHEN MATCHED THEN\n" \
                   "   UPDATE SET AP = :ap\n" \
                   " WHEN NOT MATCHED THEN\n" \
-                  "   INSERT VALUES (:key, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
     elif v_update_tuple[0] == "UPDATE":
         update_data = v_data_list[0]
@@ -444,11 +444,11 @@ def updateContract(v_update_tuple):
         if v_data_list[1]["ap"] is not None:
             sql = "MERGE INTO CNTR_AMOUNT_AP\n" \
                   "  USING DUAL\n" \
-                  "     ON (KEY = :key)\n" \
+                  "     ON (KEY = :key AND TYPE = :type)\n" \
                   " WHEN MATCHED THEN\n" \
                   "   UPDATE SET AP = :ap\n" \
                   " WHEN NOT MATCHED THEN\n" \
-                  "   INSERT VALUES (:key, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CNTR_AMOUNT WHERE KEY = :key AND TYPE = :type AND C_MONTH = :c_month"

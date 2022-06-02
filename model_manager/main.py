@@ -223,7 +223,7 @@ class MainWindow(QMainWindow, form_class):
 
     def tableInfoIcon(self):  # 상세정보 icon
         try:
-            img_file = "ppt.png"
+            img_file = "./image/ppt.png"
             info_item = QtWidgets.QTableWidgetItem()
             info_icon = QtGui.QIcon()
             info_icon.addPixmap(QtGui.QPixmap(img_file).scaled(15, 17, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation), QtGui.QIcon.Active, QtGui.QIcon.Off)

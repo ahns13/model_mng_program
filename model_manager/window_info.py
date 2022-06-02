@@ -794,7 +794,9 @@ class ModelWindow(QtWidgets.QDialog):
                 if col_idx in self.combobox_idx_in_data["contract"]:
                     contract_data[col] = getattr(self, "comboBox_contract_" + col).currentText()
                 elif col == "type":
-                    contract_data[col] = nvl(self.lineEdit_contract_type.text(), self.lineEdit_contract_type.placeholderText())
+                    type_val = nvl(self.lineEdit_contract_type.text(), self.lineEdit_contract_type.placeholderText())
+                    contract_data[col] = type_val
+                    contract_data_ap[col] = type_val
                 elif col == "ap":
                     input_text = self.lineEdit_contract_ap.text()
                     contract_data_ap[col] = input_text
@@ -983,5 +985,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(567)
+    window = ModelWindow(324)
     app.exec_()
