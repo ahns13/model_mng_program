@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -238,14 +238,24 @@ def updateHobbynspec(v_update_tuple):
     v_update_tuple[key, mod_type, insert_value]
     mod_type: INSERT/DELETE
     """
+    v_key = v_update_tuple[1]
     cursor = conn.cursor()
-    if v_update_tuple[1] == "INSERT":
+    if v_update_tuple[0] == "INSERT":
         sql = "INSERT INTO HOBBYNSPEC VALUES\n"
-        sql += "("+str(v_update_tuple[0])+",(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = "+str(v_update_tuple[0])+"),'"+v_update_tuple[2]+"',SYSDATE,'admin',SYSDATE,'admin')"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
-    elif v_update_tuple[1] == "DELETE":
-        sql = "DELETE HOBBYNSPEC WHERE KEY = " + str(v_update_tuple[0]) + " AND NO = " + str(v_update_tuple[2])
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
+        sql += "(:key,(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = :key),:data,SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key, "data": v_update_tuple[2]})
+    elif v_update_tuple[0] == "DELETE":
+        sql = "DELETE HOBBYNSPEC WHERE KEY = :key AND NO = :no"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key, "no": v_update_tuple[2]})
+
+        sql = "UPDATE HOBBYNSPEC A\n" \
+              "   SET NO = (SELECT R_NO\n" \
+              "               FROM (SELECT KEY, NO, ROW_NUMBER() OVER (ORDER BY NO) AS R_NO\n" \
+              "                       FROM HOBBYNSPEC\n" \
+              "                      WHERE KEY = :key) B\n" \
+              "              WHERE A.KEY = B.KEY AND A.NO = B.NO)\n" \
+              " WHERE A.KEY = :key"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key})
     cursor.close()
     return True
 
@@ -254,10 +264,10 @@ def info_career(v_key):
     cursor = conn.cursor()
     sql =  "SELECT a.career_type, a.detail_gubun, to_char(a.no) as no, a.careers\n"
     sql += "  FROM CAREER A, COMBO_MAP_LIST B\n"
-    sql += " WHERE A.CAREER_TYPE = B.COL_NAME\n"
+    sql += " WHERE A.CAREER_TYPE = B.COL_NAME(+)\n"
     sql += "   AND A.KEY = '" + str(v_key) + "'\n"
-    sql += "   AND B.COMBO_TYPE = 'CAREER'\n"
-    sql += " ORDER BY B.SORT_ORDER, A.NO"
+    sql += "   AND 'CAREER' = B.COMBO_TYPE(+)\n"
+    sql += " ORDER BY B.SORT_ORDER, A.CAREER_TYPE, A.DETAIL_GUBUN, A.NO"
     result = sql_execute(cursor, sql, execute_only=False, key=v_key)
     career_result = {}
     for row in result:
@@ -294,6 +304,25 @@ def updateCareer(v_update_tuple):
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CAREER WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+
+        v_no_update_list = []
+        compare_val = ""
+        for data in v_data_list:
+            current_val = data["career_type"]+data["detail_gubun"]
+            if compare_val != current_val:
+                v_no_update_list.append({"key": v_key, "career_type": data["career_type"], "detail_gubun": data["detail_gubun"]})
+                compare_val = current_val
+
+        sql = "UPDATE CAREER A\n" \
+              "   SET NO = (SELECT R_NO\n" \
+              "               FROM (SELECT KEY, CAREER_TYPE, DETAIL_GUBUN, NO\n"\
+              "                          , ROW_NUMBER() OVER (PARTITION BY KEY, CAREER_TYPE, DETAIL_GUBUN ORDER BY NO) AS R_NO\n" \
+              "                       FROM CAREER\n" \
+              "                      WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun) B\n" \
+              "              WHERE A.KEY = B.KEY AND A.CAREER_TYPE = B.CAREER_TYPE\n" \
+              "                AND A.DETAIL_GUBUN = B.DETAIL_GUBUN AND A.NO = B.NO)\n" \
+              " WHERE A.KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_no_update_list)
     elif v_update_tuple[0] == "ALL_DELETE":
         sql = "DELETE CAREER WHERE KEY = '" + v_key + "'"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
@@ -355,6 +384,15 @@ def updateContact(v_update_tuple):
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CONTACT WHERE KEY = :key AND NO = :no"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+
+        sql = "UPDATE CONTACT A\n" \
+              "   SET NO = (SELECT R_NO\n" \
+              "               FROM (SELECT KEY, NO, ROW_NUMBER() OVER (ORDER BY NO) AS R_NO\n" \
+              "                       FROM CONTACT\n" \
+              "                      WHERE KEY = :key) B\n" \
+              "              WHERE A.KEY = B.KEY AND A.NO = B.NO)\n" \
+              " WHERE A.KEY = :key"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key})
     elif v_update_tuple[0] == "ALL_DELETE":
         sql = "DELETE CONTACT WHERE KEY = '" + v_key + "'"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
@@ -441,7 +479,7 @@ def updateContract(v_update_tuple):
 
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=update_data)
 
-        if v_data_list[1]["ap"] is not None:
+        if v_data_list[1]["ap"] is not None and v_data_list[1]["ap"] != "":
             sql = "MERGE INTO CNTR_AMOUNT_AP\n" \
                   "  USING DUAL\n" \
                   "     ON (KEY = :key AND TYPE = :type)\n" \
@@ -450,9 +488,19 @@ def updateContract(v_update_tuple):
                   " WHEN NOT MATCHED THEN\n" \
                   "   INSERT VALUES (:key, :type, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
+        elif v_data_list[1]["ap"] == "":
+            sql = "DELETE CNTR_AMOUNT_AP WHERE KEY = :key AND TYPE = :type"
+            v_delete_data = {"key": v_key, "type": update_data["type"]}
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_delete_data)
     elif v_update_tuple[0] == "DELETE":
-        sql = "DELETE CNTR_AMOUNT WHERE KEY = :key AND TYPE = :type AND C_MONTH = :c_month"
+        sql = "DELETE CNTR_AMOUNT WHERE KEY = :key AND TYPE = :type AND C_MONTH = sf_code_cd('C_MONTH', :c_month)"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+
+        sql = "DELETE CNTR_AMOUNT_AP A\n" \
+              " WHERE (KEY, TYPE) IN (SELECT DISTINCT B.KEY, B.TYPE FROM CNTR_AMOUNT_AP B, CNTR_AMOUNT C\n" \
+              "                        WHERE B.KEY = C.KEY(+) AND B.TYPE = C.TYPE(+)\n" \
+              "                          AND B.KEY = :key AND C.KEY IS NULL)"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key})
     elif v_update_tuple[0] == "ALL_DELETE":
         sql = "DELETE CNTR_AMOUNT WHERE KEY = '" + v_key + "'"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
@@ -460,6 +508,64 @@ def updateContract(v_update_tuple):
     return True
 
 
+def updateOther(v_update_tuple):
+    """
+    v_update_tuple
+    INSERT : (mod_type, [{key, no, info, data_date}])
+    UPDATE : (mod_type, [{key, no, info, data_date}])
+    DELETE : (mod_type, [{key, no}])
+    mod_type: INSERT/UPDATE/DELETE
+    """
+    v_data_list = v_update_tuple[1]
+    v_key = v_data_list[0]["key"]
+    cursor = conn.cursor()
+    if v_update_tuple[0] == "INSERT":
+        sql = "INSERT INTO CNTR_OTHER VALUES\n" \
+              "(:key, (SELECT NVL(MAX(NO),0)+1 FROM CNTR_OTHER WHERE KEY = :key), :info, " + \
+              ":data_date, SYSDATE,'admin',SYSDATE,'admin')"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
+    elif v_update_tuple[0] == "UPDATE":
+        first_check = 0
+        for r_idx, row in enumerate(v_data_list):
+            sql = "UPDATE CNTR_OTHER SET "
+            for c_idx, col in enumerate(list(row.keys())[2:]):  # key, no 제외
+                sql += (", " if first_check else "") + col+" = :"+col
+                first_check += 1
+            sql += "\n"
+            sql += " WHERE KEY = :key AND NO = :no"
+            sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[r_idx])
+    elif v_update_tuple[0] == "DELETE":
+        sql = "DELETE CNTR_OTHER WHERE KEY = :key AND NO = :no"
+        sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
+
+        sql = "UPDATE CNTR_OTHER A\n" \
+              "   SET NO = (SELECT R_NO\n" \
+              "               FROM (SELECT KEY, NO, ROW_NUMBER() OVER (ORDER BY NO) AS R_NO\n" \
+              "                       FROM CNTR_OTHER\n" \
+              "                      WHERE KEY = :key) B\n" \
+              "              WHERE A.KEY = B.KEY AND A.NO = B.NO)\n" \
+              " WHERE A.KEY = :key"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key})
+    elif v_update_tuple[0] == "ALL_DELETE":
+        sql = "DELETE CNTR_OTHER WHERE KEY = '" + v_key + "'"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key)
+    cursor.close()
+    return True
+
+
+def info_other(v_key):
+    cursor = conn.cursor()
+    sql =  "SELECT no, info, data_date\n"
+    sql += "  FROM CNTR_OTHER\n"
+    sql += " WHERE KEY = '" + str(v_key) + "'\n"
+    sql += " ORDER BY NO"
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
+    columns = [d[0].lower() for d in cursor.description]
+    cursor.close()
+    return [columns, result]
+
+
 if __name__ == "__main__":
+    print(globals())
     pass
 

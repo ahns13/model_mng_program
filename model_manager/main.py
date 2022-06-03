@@ -313,10 +313,11 @@ class MainWindow(QMainWindow, form_class):
                 else:
                     QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
         elif item.column() == self.tableClickIndex["tableDetailInfoIndex"]:
-            self.modelClickOpenWindow(self.tableData[item.row()][9])
+            self.modelClickOpenWindow(self.tableData[item.row()][9], self.tableData[item.row()][0])
 
-    def modelClickOpenWindow(self, v_click_model_key):
+    def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
         model_window = ModelWindow(v_click_model_key)
+        model_window.setWindowTitle(model_window.windowTitle() + " - " + v_click_model_name)
         model_window.exec_()
 
     def closeEvent(self, event):
