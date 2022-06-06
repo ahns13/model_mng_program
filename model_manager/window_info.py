@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHobbynspec, get_comboBox_list_career, \
     info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile, \
-    info_contract, updateContract, info_other
+    info_contract, updateContract, info_other, updateOther
 from model_functions import *
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
@@ -120,7 +120,6 @@ class ModelWindow(QtWidgets.QDialog):
         }
 
         # model_profile
-        self.lineEdit_profile_name.setPlaceholderText("필수 입력 항목")
         for edit_key in self.select_info_profile[0].keys():
             cur_lineEdit = getattr(self, "lineEdit_profile_" + edit_key)
             cur_lineEdit.setText(self.select_info_profile[0][edit_key])
@@ -159,8 +158,6 @@ class ModelWindow(QtWidgets.QDialog):
             self.comboBox_career_type.addItems(get_comboBox_list_career()[0])
             comboStyleCss(self.comboBox_career_type, "120")
 
-            self.lineEdit_career_detail_gubun.setPlaceholderText("해당없음")
-
             self.btn_career_insert.clicked.connect(lambda: self.careerDataExec("INSERT"))
             self.btn_career_update.clicked.connect(lambda: self.careerDataExec("UPDATE"))
             self.btn_career_delete.clicked.connect(lambda: self.careerDataExec("DELETE"))
@@ -188,7 +185,6 @@ class ModelWindow(QtWidgets.QDialog):
             self.close()
 
         # contact
-        self.lineEdit_contact_name.setPlaceholderText("필수 입력 항목")
         try:
             contact_gubun_cd_data = getCMCodeList("CONTACT_GUBUN")
             self.comboBox_contact_gubun_list = contact_gubun_cd_data[0]
@@ -227,8 +223,6 @@ class ModelWindow(QtWidgets.QDialog):
             self.close()
 
         # contract
-        self.lineEdit_contract_type.setPlaceholderText("해당없음")
-        self.lineEdit_contract_amount.setPlaceholderText("기준")
         self.contract_table_selected_index = None
         try:
             contract_c_month_cd_data = getCMCodeList("C_MONTH")
@@ -465,7 +459,7 @@ class ModelWindow(QtWidgets.QDialog):
                                 data_list = [career_data]
                                 if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
                                     conn.commit()
-                                    self.careerTable()
+                                    self.tableDataCreater("career")
                                 self.lineEdit_career_careers.setText("")
                     else:
                         QMessageBox.about(self, "알림", "경력에 추가할 값을 입력하세요.")
@@ -474,7 +468,7 @@ class ModelWindow(QtWidgets.QDialog):
                         if self.btnExecOrCancel("del") == QMessageBox.Yes:
                             if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateCareer, v_mod_type, [{"key": self.select_key}]):
                                 conn.commit()
-                                self.careerTable()
+                                self.tableDataCreater("career")
                     else:
                         QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
                 else:  # UPDATE/DELETE
@@ -488,16 +482,13 @@ class ModelWindow(QtWidgets.QDialog):
                                     data_list.append(career_data)
                             if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateCareer, v_mod_type, data_list):
                                 conn.commit()
-                                print('committed')
-                                self.careerTable()
-                                print('reload')
+                                self.tableDataCreater("career")
                     else:
                         QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
             else:
                 QMessageBox.about(self, "알림", flag_massage)
         except Exception as e:
             QMessageBox.critical(self, "오류", e.args[0])
-
 
     def tableCellEdited(self, item):
         try:
@@ -525,7 +516,8 @@ class ModelWindow(QtWidgets.QDialog):
                 changed_text = item.text() if item.text() else None
                 row_value_changed = False if original_text == changed_text else True
             elif table_obj_name in ["tableWidget_contact", "tableWidget_other"]:
-                for idx, data in enumerate(self.select_info_contact[item.row()]):
+                info_data = getattr(self, "select_info_" + table_obj_name[table_obj_name.index("_")+1:])
+                for idx, data in enumerate(info_data[item.row()]):
                     data = "" if data is None else data
                     if not row_value_changed and data != row_list[idx]:
                         row_value_changed = True
@@ -562,7 +554,7 @@ class ModelWindow(QtWidgets.QDialog):
                             data_list = [contact_data]
                             if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateContact, v_mod_type, data_list):
                                 conn.commit()
-                                self.contactTable()
+                                self.tableDataCreater("contact")
                             for col_idx, col in enumerate(self.contact_table_cols):
                                 if col in self.table_no_edit_column["contact"]:
                                     pass
@@ -575,7 +567,7 @@ class ModelWindow(QtWidgets.QDialog):
                         if self.btnExecOrCancel("del") == QMessageBox.Yes:
                             if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateContact, v_mod_type, [{"key": self.select_key}]):
                                 conn.commit()
-                                self.contactTable()
+                                self.tableDataCreater("contact")
                     else:
                         QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
                 else:  # UPDATE/DELETE
@@ -608,7 +600,7 @@ class ModelWindow(QtWidgets.QDialog):
                                     data_list.append(contact_data)
                             if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateContact, v_mod_type, data_list):
                                 conn.commit()
-                                self.contactTable()
+                                self.tableDataCreater("contact")
                     else:
                         QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
             else:
@@ -696,7 +688,11 @@ class ModelWindow(QtWidgets.QDialog):
                                     contract_data[col] = selected_data[col_idx] if selected_data[col_idx] is not None else ''
                                 else:
                                     try:
-                                        getattr(self, "lineEdit_contract_"+col).setText(selected_data[col_idx])
+                                        if col == "amount" and "~" in selected_data[col_idx]:
+                                            amount1_index = self.contract_table_cols.index("amount1")
+                                            getattr(self, "lineEdit_contract_" + col).setText(selected_data[amount1_index])
+                                        else:
+                                            getattr(self, "lineEdit_contract_"+col).setText(selected_data[col_idx])
 
                                         if col == "ap":
                                             contract_data_ap[col] = selected_data[col_idx] if selected_data[col_idx] is not None else ''
@@ -813,6 +809,69 @@ class ModelWindow(QtWidgets.QDialog):
                         continue
             return True
         
+    def otherDataExec(self, v_mod_type):
+        data_list = []
+        try:
+            if self.flag_status:
+                if v_mod_type == "INSERT":
+                    if self.btnExecOrCancel("save") == QMessageBox.Yes:
+                        if self.column_value_type_check("other"):
+                            other_data = {"key": self.select_key}
+                            for col_idx, col in enumerate(self.other_table_cols):
+                                if col in self.table_no_edit_column["other"]:
+                                    pass
+                                else:
+                                    other_data[col] = getattr(self, "lineEdit_other_"+col).text()
+
+                            data_list = [other_data]
+                            if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateOther, v_mod_type, data_list):
+                                conn.commit()
+                                self.tableDataCreater("other")
+                            for col_idx, col in enumerate(self.other_table_cols):
+                                if col in self.table_no_edit_column["other"]:
+                                    pass
+                                else:
+                                    getattr(self, "lineEdit_other_"+col).setText("")
+                elif v_mod_type == "ALL_DELETE":
+                    if self.select_info_other:
+                        if self.btnExecOrCancel("del") == QMessageBox.Yes:
+                            if self.updateExec([True, "전체 삭제 완료", "삭제 실패"], updateOther, v_mod_type, [{"key": self.select_key}]):
+                                conn.commit()
+                                self.tableDataCreater("other")
+                    else:
+                        QMessageBox.about(self, "알림", "삭제할 데이터가 없습니다.")
+                else:  # UPDATE/DELETE
+                    checked_list = getCheckListFromTable(self.tableWidget_other, QCheckBox)
+                    if checked_list:
+                        if self.btnExecOrCancel("save" if v_mod_type == "UPDATE" else "del") == QMessageBox.Yes:
+                            for chk_idx in checked_list:
+                                other_data = {"key": self.select_key}
+                                if v_mod_type == "UPDATE":
+                                    original_data = self.select_info_other[chk_idx]
+                                    changed_data = []
+                                    for col_idx in list(range(self.tableWidget_other.columnCount()))[1:]:
+                                        table_item_data = self.tableWidget_other.model().index(chk_idx, col_idx).data()
+                                        changed_data.append(table_item_data if table_item_data else None)
+
+                                    for idx, col in enumerate(self.other_table_cols):
+                                        if original_data[idx] != changed_data[idx]:
+                                            other_data[self.other_table_cols[idx]] = changed_data[idx]
+                                    data_list.append(other_data)
+                                else:
+                                    for idx, col in enumerate(self.other_table_cols):
+                                        if col == "no":
+                                            other_data["no"] = self.select_info_other[chk_idx][idx]
+                                    data_list.append(other_data)
+                            if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateOther, v_mod_type, data_list):
+                                conn.commit()
+                                self.tableDataCreater("other")
+                    else:
+                        QMessageBox.about(self, "알림", "선택된 데이터가 없습니다.")
+            else:
+                QMessageBox.about(self, "알림", flag_massage)
+        except Exception as e:
+            QMessageBox.critical(self, "오류", e.args[0])
+        
     def tableDataCreater(self, v_type):
         info_data = globals()["info_"+v_type](self.select_key)
         if info_data:
@@ -860,14 +919,14 @@ class ModelWindow(QtWidgets.QDialog):
                 self.close()
         else:
             try:
-               table_obj.blockSignals(True)
-               table_obj.setRowCount(0)
-               table_obj.insertRow(0)
-               table_obj.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
-               table_obj.setSpan(0, 0, 1, table_obj.columnCount())
-               table_obj.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
-               table_obj.blockSignals(False)
-               table_obj.verticalHeader().setMinimumSectionSize(22)
+                table_obj.blockSignals(True)
+                table_obj.setRowCount(0)
+                table_obj.insertRow(0)
+                table_obj.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
+                table_obj.setSpan(0, 0, 1, table_obj.columnCount())
+                table_obj.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
+                table_obj.blockSignals(False)
+                table_obj.verticalHeader().setMinimumSectionSize(22)
             except Exception as e:
                 table_obj.blockSignals(False)
                 QMessageBox.critical(self, "오류", e.args[0])
@@ -910,6 +969,14 @@ class ModelWindow(QtWidgets.QDialog):
                     key_column_input_check = False
                     message_list.append(label_text.replace(" ", "") + "(은)는 필수 입력 항목입니다.")
                     break
+
+                if data[3] is not None:  # check_string
+                    if data[3] in lineEdit_input_text:
+                        pass
+                    else:
+                        message_list.append([obj_lineEdit, label_text.replace(" ", "") + "에 입력된 값에 " + data[3] +
+                                             " 문자가 꼭 포함되어야 합니다."])
+                        continue
 
                 if check_value_type == data[1]:
                     if data[2] is not None:
@@ -969,8 +1036,7 @@ class ModelWindow(QtWidgets.QDialog):
         img_file = "./image/init.png"
         info_icon = QtGui.QIcon()
         pixmap = QtGui.QPixmap(img_file).scaled(15, 17, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        info_icon.addPixmap(
-            pixmap, QtGui.QIcon.Active, QtGui.QIcon.Off)
+        info_icon.addPixmap(pixmap, QtGui.QIcon.Active, QtGui.QIcon.Off)
         buttn_init_obj = getattr(self, "btn_"+v_type+"_init")
         buttn_init_obj.setIcon(info_icon)
         buttn_init_obj.clicked.connect(lambda: self.typeLineEditInit(v_type))
@@ -986,6 +1052,11 @@ class ModelWindow(QtWidgets.QDialog):
 
         if v_type == "contract":
             self.contract_update_org_data = [{}, {}]
+            if self.btn_contract_insert.text() != "추가":
+                self.lineEditDisable("contract", False)
+                self.btn_contract_insert.clicked.disconnect()
+                self.btn_contract_insert.clicked.connect(lambda: self.contractDataExec("INSERT"))
+                self.btn_contract_insert.setText("추가")
 
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
@@ -1022,5 +1093,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(2)
+    window = ModelWindow(614)
     app.exec_()

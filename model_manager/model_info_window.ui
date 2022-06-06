@@ -127,6 +127,9 @@ cursor: pointer;</string>
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
      </property>
+     <property name="placeholderText">
+      <string>필수 입력 항목</string>
+     </property>
     </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_real_name">
@@ -267,6 +270,9 @@ cursor: pointer;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>생년(4자리)</string>
      </property>
     </widget>
    </widget>
@@ -703,6 +709,9 @@ cursor: pointer;</string>
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
      </property>
+     <property name="placeholderText">
+      <string>'-' 포함하여 입럭</string>
+     </property>
     </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_email">
@@ -774,6 +783,9 @@ cursor: pointer;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string/>
      </property>
     </widget>
    </widget>
@@ -918,6 +930,9 @@ cursor: pointer;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>99-99-99</string>
      </property>
     </widget>
    </widget>
@@ -1134,6 +1149,9 @@ cursor: pointer;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>하나씩 등록</string>
      </property>
     </widget>
    </widget>
@@ -1376,6 +1394,9 @@ cursor: pointer;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>해당없음</string>
      </property>
     </widget>
    </widget>
@@ -1662,6 +1683,9 @@ cursor: pointer;</string>
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
      </property>
+     <property name="placeholderText">
+      <string>필수 입력 항목</string>
+     </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_contact_position">
      <property name="geometry">
@@ -1738,6 +1762,9 @@ border-radius: 5px;</string>
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
      </property>
+     <property name="placeholderText">
+      <string>MAIN/광고 등</string>
+     </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_contact_email">
      <property name="geometry">
@@ -1781,6 +1808,9 @@ border-radius: 5px;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>'-' 포함하여 입력</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_contact_email">
@@ -2070,9 +2100,21 @@ cursor: pointer;</string>
        <height>22</height>
       </rect>
      </property>
+     <property name="toolTip">
+      <string>전속/비전속/뷰티 등등</string>
+     </property>
+     <property name="toolTipDuration">
+      <number>-2</number>
+     </property>
+     <property name="statusTip">
+      <string/>
+     </property>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>해당없음</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_contract_amount">
@@ -2087,6 +2129,9 @@ border-radius: 5px;</string>
      <property name="styleSheet">
       <string notr="true">background-color: rgb(255, 255, 255);
 border-radius: 5px;</string>
+     </property>
+     <property name="placeholderText">
+      <string>기준</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_contract_amount">

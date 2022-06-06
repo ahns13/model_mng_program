@@ -317,7 +317,7 @@ class MainWindow(QMainWindow, form_class):
 
     def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
         model_window = ModelWindow(v_click_model_key)
-        model_window.setWindowTitle(model_window.windowTitle() + " - " + v_click_model_name)
+        model_window.setWindowTitle(model_window.windowTitle() + " - " + (v_click_model_name if v_click_model_name else "신규" ))
         model_window.exec_()
 
     def closeEvent(self, event):

@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -402,7 +402,7 @@ def updateContact(v_update_tuple):
 
 def getColType():
     cursor = conn.cursor()
-    sql = "SELECT LOWER(GUBUN) GUBUN, LOWER(COL_NAME) COL_NAME, DATA_TYPE, DATA_LEN\n" \
+    sql = "SELECT LOWER(GUBUN) GUBUN, LOWER(COL_NAME) COL_NAME, DATA_TYPE, DATA_LEN, CHECK_STRING\n" \
           "  FROM COLUMN_VALUE_TYPE\n" \
           " ORDER BY COL_NAME"
     result = sql_execute(cursor, sql, execute_only=False)
@@ -425,7 +425,7 @@ def getMaxKeyOfProfile():
 def info_contract(v_key):
     cursor = conn.cursor()
     sql =  "SELECT A.type, sf_code_nm('C_MONTH', A.c_month) as c_month, A.amount||NVL2(A.amount2,'~'||A.amount2,'') as amount" \
-           ", B.ap, A.data_date, A.amount2\n" \
+           ", B.ap, A.data_date, A.amount amount1, A.amount2\n" \
            "     , count(1) over (partition by A.type) as merge_col_cnt\n" \
            "     , row_number() over (partition by A.type order by to_number(A.c_month)) as r_no\n" \
            "  FROM CNTR_AMOUNT A, CNTR_AMOUNT_AP B\n" \
@@ -508,6 +508,18 @@ def updateContract(v_update_tuple):
     return True
 
 
+def info_other(v_key):
+    cursor = conn.cursor()
+    sql =  "SELECT no, info, data_date\n"
+    sql += "  FROM CNTR_OTHER\n"
+    sql += " WHERE KEY = '" + str(v_key) + "'\n"
+    sql += " ORDER BY NO"
+    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
+    columns = [d[0].lower() for d in cursor.description]
+    cursor.close()
+    return [columns, result]
+
+
 def updateOther(v_update_tuple):
     """
     v_update_tuple
@@ -553,19 +565,15 @@ def updateOther(v_update_tuple):
     return True
 
 
-def info_other(v_key):
+def loginInfo():
     cursor = conn.cursor()
-    sql =  "SELECT no, info, data_date\n"
-    sql += "  FROM CNTR_OTHER\n"
-    sql += " WHERE KEY = '" + str(v_key) + "'\n"
-    sql += " ORDER BY NO"
-    result = sql_execute(cursor, sql, execute_only=False, key=v_key)
-    columns = [d[0].lower() for d in cursor.description]
+    sql = "SELECT USER_NAME FROM MODEL_USERS ORDER BY SORT_ORDER"
+    result = sql_execute(cursor, sql, execute_only=False, er_rollback=True)
     cursor.close()
-    return [columns, result]
+    list = [r[0] for r in result]
+    return list
 
 
 if __name__ == "__main__":
-    print(globals())
     pass
 
