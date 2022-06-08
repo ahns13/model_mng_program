@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import *
 from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career
 from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy
 from window_info import ModelWindow
+from login import LoginWindow
 from model_functions import *
 
 form_class = uic.loadUiType("./model_manage_main.ui")[0]
@@ -33,6 +34,8 @@ class MainWindow(QMainWindow, form_class):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+
+        self.login_user_name = None
 
         # tableWidget
         self.tableColCount = 8  # resultl data - total_cnt index
@@ -133,6 +136,11 @@ class MainWindow(QMainWindow, form_class):
         self.buttonStyleCss(self.btn_new, "rgb(58, 134, 255)")
         self.btn_new.clicked.connect(lambda: self.modelClickOpenWindow(""))
 
+        # lineEdit range value
+        self.comboBoxRangeConnect()
+
+        self.loginCheck()
+
         self.show()
 
     def buttonStyleCss(self, obj_button, v_rgb_color):
@@ -160,7 +168,13 @@ class MainWindow(QMainWindow, form_class):
 
         # data_type check
         if v_search_type != "career" and cur_combo_data[1][select_combo][3] == "NUMBER":
-            if not input_text.isnumeric():
+            if "~" in input_text:
+                for text in input_text.replace(" ", "").split("~"):
+                    if text and not text.isnumeric():
+                        QMessageBox.about(self, "알림", "숫자만 입력하세요.")
+                        cur_lineEdit.clear()
+                        return
+            elif not input_text.isnumeric():
                 QMessageBox.about(self, "알림", "숫자만 입력하세요.")
                 cur_lineEdit.clear()
                 return
@@ -175,6 +189,10 @@ class MainWindow(QMainWindow, form_class):
 
             if v_search_type == "career":
                 cur_combo_data[1][select_combo].append(input_text)
+            elif cur_combo_data[1][select_combo][4] == "Y" and "~" in input_text:
+                range_text = input_text.replace(" ", "").split("~")
+                cur_combo_data[1][select_combo][2]["ge"] = range_text[0]
+                cur_combo_data[1][select_combo][2]["le"] = range_text[1]
             else:
                 cur_combo_data[1][select_combo][2]["s"].append(input_text)
             self.search_input_count[v_search_type] += 1
@@ -195,7 +213,7 @@ class MainWindow(QMainWindow, form_class):
                     else:
                         search_types = cur_combo_data[1]
                         for s_type in search_types.keys():
-                            cur_combo_data[1][s_type][2]["s"] = []
+                            cur_combo_data[1][s_type][2] = {"s": [], "ge": "", "le": ""}
                     self.search_input_count[i_type] = 0
         else:
             self.itemLayout.removeWidget(clicked_button)
@@ -205,6 +223,9 @@ class MainWindow(QMainWindow, form_class):
             cur_combo_data = getattr(self, "combo_data_" + v_del_search_type)
             if v_del_search_type == "career":
                 cur_combo_data[1][del_btn_info[0]].remove(del_btn_info[1])
+            elif cur_combo_data[1][del_btn_info[0]][4] == "Y" and "~" in del_btn_info[1]:
+                cur_combo_data[1][del_btn_info[0]][2]["ge"] = ""
+                cur_combo_data[1][del_btn_info[0]][2]["le"] = ""
             else:
                 cur_combo_data[1][del_btn_info[0]][2]["s"].remove(del_btn_info[1])
             self.search_input_count[v_del_search_type] -= 1
@@ -315,10 +336,31 @@ class MainWindow(QMainWindow, form_class):
         elif item.column() == self.tableClickIndex["tableDetailInfoIndex"]:
             self.modelClickOpenWindow(self.tableData[item.row()][9], self.tableData[item.row()][0])
 
+    def comboBoxRangeConnect(self):
+        for type in self.search_types:
+            try:
+                combo_obj = getattr(self, "combo_" + type)
+                combo_obj.activated.connect(lambda index, p_type=type, p_combo=combo_obj: self.lineEditRangeSearch(p_type, p_combo))
+            except Exception as e:
+                continue
+
+    def lineEditRangeSearch(self, v_type, v_combo_obj):
+        comboData = getattr(self, "combo_data_" + v_type)
+        lineEdit_obj = getattr(self, "lineEdit_" + v_type)
+        if comboData[1][v_combo_obj.currentText()][4] == "Y":
+            lineEdit_obj.setPlaceholderText("범위 99~999")
+            lineEdit_obj.setStyleSheet("QLineEdit { font: 12px }")
+        else:
+            lineEdit_obj.setPlaceholderText("")
+
     def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
-        model_window = ModelWindow(v_click_model_key)
-        model_window.setWindowTitle(model_window.windowTitle() + " - " + (v_click_model_name if v_click_model_name else "신규" ))
+        model_window = ModelWindow(self.login_user_name, v_click_model_key)
+        model_window.setWindowTitle(model_window.windowTitle() + " - " + (v_click_model_name if v_click_model_name else "신규"))
         model_window.exec_()
+
+    def loginCheck(self):
+        login_window = LoginWindow()
+        login_window.exec_()
 
     def closeEvent(self, event):
         for window in QApplication.topLevelWidgets():

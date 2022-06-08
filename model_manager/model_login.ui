@@ -16,10 +16,10 @@
   <widget class="QLabel" name="label_name">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>25</x>
      <y>50</y>
-     <width>56</width>
-     <height>12</height>
+     <width>71</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
@@ -39,10 +39,10 @@
   <widget class="QLabel" name="label_pw">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>25</x>
      <y>84</y>
-     <width>56</width>
-     <height>12</height>
+     <width>71</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
@@ -83,27 +83,28 @@ cursor: pointer;</string>
     <string>로그인</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="btn_pw">
+  <widget class="QPushButton" name="btn_pw_update">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>79</y>
-     <width>22</width>
-     <height>22</height>
+     <x>26</x>
+     <y>120</y>
+     <width>101</width>
+     <height>24</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">font-weight: bold;
+    <string notr="true">font: 13px;
+font-weight: bold;
+background-color: rgb(28, 47, 154);
 color: white;
-background-color: rgb(131, 56, 236);
 border-radius: 5px;
 cursor: pointer;</string>
    </property>
    <property name="text">
-    <string>+</string>
+    <string>등록 및 수정</string>
    </property>
   </widget>
  </widget>

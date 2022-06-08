@@ -72,9 +72,10 @@ class OtherDelegate(QtWidgets.QStyledItemDelegate):
         
 
 class ModelWindow(QtWidgets.QDialog):
-    def __init__(self, v_model_key=""):
+    def __init__(self, v_login_user_name, v_model_key=""):
         super(ModelWindow, self).__init__()
         uic.loadUi("./model_info_window.ui", self)  # ui파알을 위젯에 할당할 때 loadUi
+        self.login_user_name = v_login_user_name
         self.select_key = v_model_key
 
         profile_data = info_profile(v_model_key)
@@ -317,7 +318,8 @@ class ModelWindow(QtWidgets.QDialog):
                         if self.column_value_type_check("profile", v_type):
                             edit_text = self.lineEdit_profile_hobbynspec.text()
                             if len(edit_text):
-                                if self.updateExec([True, "저장 완료", "저장 실패"], updateHobbynspec, "INSERT", self.select_key, edit_text):
+                                if self.updateExec([True, "저장 완료", "저장 실패"], updateHobbynspec, "INSERT",
+                                                   {"key": self.select_key, "user_name": self.login_user_name, "value": edit_text}):
                                     conn.commit()
                                     self.hobbynspecInsertList(edit_text)
                             else:
@@ -340,7 +342,7 @@ class ModelWindow(QtWidgets.QDialog):
 
                             if v_type:
                                 if len(update_items):
-                                    if self.updateExec([True, "저장 완료", "저장 실패"], updateProfile, self.select_key, update_items):
+                                    if self.updateExec([True, "저장 완료", "저장 실패"], updateProfile, self.select_key, self.login_user_name, update_items):
                                         for items in update_items:
                                             original_data[items[0]] = items[1]
                                         conn.commit()
@@ -348,7 +350,7 @@ class ModelWindow(QtWidgets.QDialog):
                                     QMessageBox.about(self, "알림", "변경된 데이터가 없습니다.")
                             else:  # profile all
                                 if len(update_items):
-                                    profile_result = self.updateExec([False], updateProfile, self.select_key, update_items)
+                                    profile_result = self.updateExec([False], updateProfile, self.select_key, self.login_user_name, update_items)
                                     if profile_result:
                                         for items in update_items:
                                             original_data[items[0]] = items[1]
@@ -357,8 +359,10 @@ class ModelWindow(QtWidgets.QDialog):
 
                                 hobbynspec_input_text = self.lineEdit_profile_hobbynspec.text()
                                 if hobbynspec_input_text:
-                                    hobbynspec_result = self.updateExec([False], updateHobbynspec, "INSERT", self.select_key,
-                                                        hobbynspec_input_text)
+                                    hobbynspec_result = self.updateExec([False], updateHobbynspec, "INSERT",
+                                                                        {"key": self.select_key,
+                                                                         "user_name": self.login_user_name,
+                                                                         "value": hobbynspec_input_text})
                                     if hobbynspec_result:
                                         self.hobbynspecInsertList(hobbynspec_input_text)
                                 else:
@@ -389,7 +393,8 @@ class ModelWindow(QtWidgets.QDialog):
         if self.flag_status:
             if self.btnExecOrCancel("del") == QMessageBox.Yes:
                 if v_type == "hobbynspec":
-                    if self.updateExec([True, "삭제 완료", "삭제 실패"], updateHobbynspec, "DELETE", self.select_key, str(v_del_row+1)):
+                    if self.updateExec([True, "삭제 완료", "삭제 실패"], updateHobbynspec, "DELETE",
+                                       {"key": self.select_key, "user_name": self.login_user_name, "no": str(v_del_row+1)}):
                         conn.commit()
                         self.list_hobbynspec.takeItem(v_del_row)
         else:
@@ -455,7 +460,8 @@ class ModelWindow(QtWidgets.QDialog):
                                 career_data = {"key": self.select_key,
                                                "career_type": self.comboBox_career_type.currentText(),
                                                "detail_gubun": nvl(self.lineEdit_career_detail_gubun.text(), self.lineEdit_career_detail_gubun.placeholderText()),
-                                               "careers": careers_text}
+                                               "careers": careers_text,
+                                               "user_name": self.login_user_name}
                                 data_list = [career_data]
                                 if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateCareer, v_mod_type, data_list):
                                     conn.commit()
@@ -479,7 +485,10 @@ class ModelWindow(QtWidgets.QDialog):
                                 career_data = {"key": self.select_key}
                                 for col_index in self.career_table_data_rng[v_mod_type]:
                                     career_data[self.career_table_cols[col_index-1]] = self.tableWidget_career.model().index(chk_idx, col_index).data()
+                                    if v_mod_type == "UPDATE":
+                                        career_data["user_name"] = self.login_user_name
                                     data_list.append(career_data)
+
                             if self.updateExec([True, "저장 완료", "저장 실패"] if v_mod_type == "UPDATE" else [True, "삭제 완료", "삭제 실패"], updateCareer, v_mod_type, data_list):
                                 conn.commit()
                                 self.tableDataCreater("career")
@@ -551,6 +560,7 @@ class ModelWindow(QtWidgets.QDialog):
                                 else:
                                     contact_data[col] = getattr(self, "lineEdit_contact_"+col).text()
 
+                            contact_data["user_name"] = self.login_user_name
                             data_list = [contact_data]
                             if self.updateExec([True, "추가 완료.", "데이터 추가 오류 발생"], updateContact, v_mod_type, data_list):
                                 conn.commit()
@@ -592,6 +602,7 @@ class ModelWindow(QtWidgets.QDialog):
                                             contact_data[self.contact_table_cols[idx]] = original_data[idx]
                                         elif original_data[idx] != changed_data[idx]:
                                             contact_data[self.contact_table_cols[idx]] = changed_data[idx]
+                                    contact_data["user_name"] = self.login_user_name
                                     data_list.append(contact_data)
                                 else:
                                     for idx, col in enumerate(self.contact_table_cols):
@@ -735,8 +746,8 @@ class ModelWindow(QtWidgets.QDialog):
     def contract_insert_stmt(self, v_mod_type):
         # contract insert / update
         if self.column_value_type_check("contract"):
-            contract_data = {"key": self.select_key}
-            contract_data_ap = {"key": self.select_key}
+            contract_data = {"key": self.select_key, "user_name": self.login_user_name}
+            contract_data_ap = {"key": self.select_key, "user_name": self.login_user_name}
 
             for col_idx, col in enumerate(self.contract_table_cols):
                 if col_idx in self.combobox_idx_in_data["contract"]:
@@ -1093,5 +1104,5 @@ button_disabled = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = ModelWindow(614)
+    window = ModelWindow("admin", 614)
     app.exec_()

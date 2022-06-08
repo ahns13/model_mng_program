@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -21,7 +21,7 @@ def condition_add(v_tab_alias, v_srch_dir):
                             v_srch_dir[key][1] + (" UPPER('%" + item + "%')" if v_srch_dir[key][1] == "LIKE" else " UPPER('" + item + "')")
         if srch_items["ge"]:
             insert_check += 1
-            srch_sql2 += ("        OR (" if srch_sql else "        (") + v_tab_alias + "." + v_srch_dir[key][0] + " >= "+ srch_items["ge"]
+            srch_sql2 += ("        OR (" if srch_sql else "(") + v_tab_alias + "." + v_srch_dir[key][0] + " >= " + srch_items["ge"]
         if srch_items["le"]:
             insert_check += 1
             if srch_sql:
@@ -32,7 +32,7 @@ def condition_add(v_tab_alias, v_srch_dir):
         elif srch_items["ge"]:
             srch_sql2 += ")"
         if insert_check:
-            v_sql += "   AND (" + srch_sql + ("\n" + srch_sql2 if srch_sql2 else "") + ")\n"
+            v_sql += "   AND (" + (srch_sql + "\n" if srch_sql else "") + srch_sql2 + ")\n"
     return v_sql
 
 
@@ -117,7 +117,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
 
 def get_comboBox_list_a(v_combo_type):
     cursor = conn.cursor()
-    sql =  "SELECT TABLE_NAME, COMBO_DETAIL_TYPE, COL_NAME, COL_DISPLAY_NAME, COMPARE_OPERATOR, DATA_TYPE\n"
+    sql =  "SELECT TABLE_NAME, COMBO_DETAIL_TYPE, COL_NAME, COL_DISPLAY_NAME, COMPARE_OPERATOR, DATA_TYPE, RANGE_SEARCH\n"
     sql += "  FROM COMBO_MAP_LIST\n"
     sql += " WHERE COMBO_TYPE = '" + v_combo_type + "'\n"
     sql += " ORDER BY SORT_ORDER"
@@ -127,8 +127,8 @@ def get_comboBox_list_a(v_combo_type):
         item_list, item_table_map, comboBox_dir = [], {}, {}
         for row in result:
             item_list.append(row[3])
-            comboBox_dir[row[3]] = [row[2], row[4], {"s": [], "ge": "", "le": ""}, row[5]]
-            # 테이블명: { 항목명: [칼럼명, 연산자, {검색목록}, 데이터유형] }
+            comboBox_dir[row[3]] = [row[2], row[4], {"s": [], "ge": "", "le": ""}, row[5], row[6]]
+            # 테이블명: { 항목명: [칼럼명, 연산자, {검색목록}, 데이터유형, 범위 검색 여부] }
         cursor.close()
         return [item_list, comboBox_dir]
     except cx_Oracle.DatabaseError as e:
@@ -211,22 +211,24 @@ def info_profile(v_key):
 
 def updateProfile(v_update_tuple):
     """
-    v_update_tuple[key, update_value]
+    v_update_tuple[key, user_name, update_value]
     """
     cursor = conn.cursor()
+    user_name = v_update_tuple[1]
     column_list = ""
     value_list = ""
     sql = "MERGE INTO MODEL_PROFILE\n" \
           "  USING DUAL\n" \
           "    ON (KEY = '" + str(v_update_tuple[0]) + "')\n" \
           " WHEN MATCHED THEN\n" \
-          "   UPDATE SET "
-    for idx, data in enumerate(v_update_tuple[1]):
-        sql += (", " if idx else "") + data[0] + " = '" + str(data[1]) + "'"
-        column_list += (", " if idx else "") + data[0]
-        value_list += (", " if idx else "") + "'" + str(data[1]) + "'"
+          "   UPDATE SET UPDATE_DATE = SYSDATE, UPDATE_EMP = '" + user_name + "'"
+    for idx, data in enumerate(v_update_tuple[2]):
+        sql += ", " + data[0] + " = '" + str(data[1]) + "'"
+        column_list += ", " + data[0]
+        value_list += ", '" + str(data[1]) + "'"
     sql += "\nWHEN NOT MATCHED THEN\n" \
-           "   INSERT (key, " + column_list + ") VALUES ((SELECT NVL(MAX(KEY),0)+1 FROM MODEL_PROFILE), " + value_list + ")"
+           "   INSERT (key, insert_date, insert_emp, update_date, update_emp" + column_list + ") " \
+           "VALUES ((SELECT NVL(MAX(KEY),0)+1 FROM MODEL_PROFILE), sysdate, '"+user_name+"', sysdate, '"+user_name+"'"+value_list + ")"
 
     sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_update_tuple[0])
     cursor.close()
@@ -235,18 +237,18 @@ def updateProfile(v_update_tuple):
 
 def updateHobbynspec(v_update_tuple):
     """
-    v_update_tuple[key, mod_type, insert_value]
+    v_update_tuple[mod_type, key, user_name, insert_value]
     mod_type: INSERT/DELETE
     """
-    v_key = v_update_tuple[1]
+    v_key = v_update_tuple[1]["key"]
     cursor = conn.cursor()
     if v_update_tuple[0] == "INSERT":
         sql = "INSERT INTO HOBBYNSPEC VALUES\n"
-        sql += "(:key,(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = :key),:data,SYSDATE,'admin',SYSDATE,'admin')"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key, "data": v_update_tuple[2]})
+        sql += "(:key,(SELECT NVL(MAX(NO),0)+1 FROM HOBBYNSPEC WHERE KEY = :key),:data,SYSDATE,:user_name,SYSDATE,:user_name)"
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_update_tuple[1])
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE HOBBYNSPEC WHERE KEY = :key AND NO = :no"
-        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data={"key": v_key, "no": v_update_tuple[2]})
+        sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_update_tuple[1])
 
         sql = "UPDATE HOBBYNSPEC A\n" \
               "   SET NO = (SELECT R_NO\n" \
@@ -296,10 +298,10 @@ def updateCareer(v_update_tuple):
         sql = "INSERT INTO CAREER VALUES\n" + \
               "(:key, :career_type, :detail_gubun, " + \
               "(SELECT NVL(MAX(NO),0)+1 FROM CAREER" + \
-              " WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun), :careers, SYSDATE,'admin',SYSDATE,'admin')"
+              " WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun), :careers, SYSDATE,:user_name,SYSDATE,:user_name)"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
     elif v_update_tuple[0] == "UPDATE":
-        sql = "UPDATE CAREER SET CAREERS = :careers WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
+        sql = "UPDATE CAREER SET CAREERS = :careers WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no AND UPDATE_EMP = :user_name"
         sql_execute(cursor, sql, execute_many=True, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list)
     elif v_update_tuple[0] == "DELETE":
         sql = "DELETE CAREER WHERE KEY = :key AND CAREER_TYPE = :career_type AND DETAIL_GUBUN = :detail_gubun AND NO = :no"
@@ -369,15 +371,13 @@ def updateContact(v_update_tuple):
     if v_update_tuple[0] == "INSERT":
         sql = "INSERT INTO CONTACT VALUES\n" \
               "(:key, (SELECT NVL(MAX(NO),0)+1 FROM CONTACT WHERE KEY = :key), :name, :gubun, :position, " + \
-              ":mng_gubun, :tel, :email, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
+              ":mng_gubun, :tel, :email, :data_date, SYSDATE,:user_name,SYSDATE,:user_name)"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
     elif v_update_tuple[0] == "UPDATE":
-        first_check = 0
         for r_idx, row in enumerate(v_data_list):
-            sql = "UPDATE CONTACT SET "
+            sql = "UPDATE CONTACT SET UPDATE_DATE = SYSDATE, UPDATE_EMP = :user_name"
             for c_idx, col in enumerate(list(row.keys())[2:]):  # key, no 제외
-                sql += (", " if first_check else "") + col+" = :"+col
-                first_check += 1
+                sql += ", " + col+" = :"+col
             sql += "\n"
             sql += " WHERE KEY = :key AND NO = :no"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[r_idx])
@@ -452,7 +452,7 @@ def updateContract(v_update_tuple):
     if v_update_tuple[0] == "INSERT":
         sql = "INSERT INTO CNTR_AMOUNT (KEY, TYPE, C_MONTH, AMOUNT, AMOUNT2, DATA_DATE, " \
               "INSERT_DATE, INSERT_EMP, UPDATE_DATE, UPDATE_EMP)\n VALUES" \
-              "(:key, :type, sf_code_cd('C_MONTH', :c_month), :amount, :amount2, :data_date, SYSDATE,'admin',SYSDATE,'admin')"
+              "(:key, :type, sf_code_cd('C_MONTH', :c_month), :amount, :amount2, :data_date, SYSDATE,:user_name,SYSDATE,:user_name)"
         sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[0])
 
         if v_data_list[1]["ap"]:
@@ -460,19 +460,19 @@ def updateContract(v_update_tuple):
                   "  USING DUAL\n" \
                   "     ON (KEY = :key AND TYPE = :type)\n" \
                   " WHEN MATCHED THEN\n" \
-                  "   UPDATE SET AP = :ap\n" \
+                  "   UPDATE SET AP = :ap, UPDATE_DATE = SYSDDATE, UPDATE_EMP = :user_name\n" \
                   " WHEN NOT MATCHED THEN\n" \
-                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,:user_name,SYSDATE,:user_name)\n"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
     elif v_update_tuple[0] == "UPDATE":
         update_data = v_data_list[0]
         first_check = 0
         update_list = list(update_data.keys())[3:]  # key, type, c_month 제외
         if update_list:
-            sql = "UPDATE CNTR_AMOUNT SET "
+            sql = "UPDATE CNTR_AMOUNT SET UPDATE_DATE = SYSDATE, UPDATE_EMP = :user_name"
             for c_idx, col in enumerate(update_list):
                 if update_data[col] is not None:
-                    sql += (", " if first_check else "") + col+" = :"+col
+                    sql += ", " + col+" = :"+col
                     first_check += 1
             sql += "\n"
             sql += " WHERE KEY = :key AND TYPE = :type AND C_MONTH = sf_code_cd('C_MONTH', :c_month)"
@@ -484,9 +484,9 @@ def updateContract(v_update_tuple):
                   "  USING DUAL\n" \
                   "     ON (KEY = :key AND TYPE = :type)\n" \
                   " WHEN MATCHED THEN\n" \
-                  "   UPDATE SET AP = :ap\n" \
+                  "   UPDATE SET AP = :ap, UPDATE_DATE = SYSDDATE, UPDATE_EMP = :user_name\n" \
                   " WHEN NOT MATCHED THEN\n" \
-                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,'admin',SYSDATE,'admin')\n"
+                  "   INSERT VALUES (:key, :type, :ap, SYSDATE,:user_name,SYSDATE,:user_name)\n"
             sql_execute(cursor, sql, execute_only=True, er_rollback=True, key=v_key, ins_data=v_data_list[1])
         elif v_data_list[1]["ap"] == "":
             sql = "DELETE CNTR_AMOUNT_AP WHERE KEY = :key AND TYPE = :type"
@@ -572,6 +572,22 @@ def loginInfo():
     cursor.close()
     list = [r[0] for r in result]
     return list
+
+
+def updatePassword(v_user_name, v_user_pw):
+    cursor = conn.cursor()
+    sql = "UPDATE MODEL_USERS SET USER_PW = '" + v_user_pw + "' WHERE USER_NAME = '" + v_user_name + "'"
+    sql_execute(cursor, sql, execute_only=True, er_rollback=True)
+    cursor.close()
+    return True
+
+
+def loginExec(v_user_name, v_user_pw):
+    cursor = conn.cursor()
+    sql = "SELECT COUNT(1) FROM MODEL_USERS WHERE USER_NAME = '" + v_user_name + "' AND USER_PW = '" + v_user_pw + "'"
+    result = sql_execute(cursor, sql, execute_only=False, er_rollback=True)
+    cursor.close()
+    return True if result[0][0] == 1 else False
 
 
 if __name__ == "__main__":
