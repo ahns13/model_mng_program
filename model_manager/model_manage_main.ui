@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1304</width>
-    <height>768</height>
+    <width>1631</width>
+    <height>772</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,6 +43,11 @@
     </column>
     <column>
      <property name="text">
+      <string>LIST 추가</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
       <string>생년월일</string>
      </property>
     </column>
@@ -71,6 +76,11 @@
       <string>파일위치</string>
      </property>
     </column>
+    <column>
+     <property name="text">
+      <string>이미지경로</string>
+     </property>
+    </column>
    </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
@@ -90,8 +100,8 @@
      <rect>
       <x>20</x>
       <y>680</y>
-      <width>214</width>
-      <height>30</height>
+      <width>181</width>
+      <height>38</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -99,21 +109,30 @@
       <widget class="QPushButton" name="btn_prev">
        <property name="maximumSize">
         <size>
-         <width>80</width>
+         <width>60</width>
          <height>16777215</height>
         </size>
        </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(67, 67, 67);</string>
+       </property>
        <property name="text">
-        <string>이전</string>
+        <string>◀</string>
        </property>
       </widget>
      </item>
-     <item alignment="Qt::AlignVCenter">
+     <item>
       <widget class="QComboBox" name="combo_page">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>26</height>
+        </size>
+       </property>
        <property name="maximumSize">
         <size>
          <width>40</width>
-         <height>40</height>
+         <height>26</height>
         </size>
        </property>
        <item>
@@ -127,12 +146,15 @@
       <widget class="QPushButton" name="btn_next">
        <property name="maximumSize">
         <size>
-         <width>80</width>
+         <width>60</width>
          <height>16777215</height>
         </size>
        </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(67, 67, 67);</string>
+       </property>
        <property name="text">
-        <string>다음</string>
+        <string>▶</string>
        </property>
       </widget>
      </item>
@@ -501,6 +523,34 @@
      <string>신  규</string>
     </property>
    </widget>
+   <widget class="QTableWidget" name="tableWidget_select_list">
+    <property name="geometry">
+     <rect>
+      <x>1190</x>
+      <y>20</y>
+      <width>231</width>
+      <height>161</height>
+     </rect>
+    </property>
+    <property name="editTriggers">
+     <set>QAbstractItemView::NoEditTriggers</set>
+    </property>
+    <column>
+     <property name="text">
+      <string/>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>모델명</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>삭제</string>
+     </property>
+    </column>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -508,7 +558,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1304</width>
+     <width>1631</width>
      <height>26</height>
     </rect>
    </property>

@@ -634,7 +634,7 @@ class ModelWindow(QtWidgets.QDialog):
                 merge_col_idx = self.contract_table_cols.index("merge_col_cnt")
                 for m_idx, m_row in enumerate(self.select_info_contract):
                     self.tableWidget_contract.insertRow(m_idx)
-                    self.tableWidget_contract.setCellWidget(m_idx, 0, self.tableCheckBox())
+                    self.tableWidget_contract.setCellWidget(m_idx, 0, tableCheckBox())
                     for r_idx, r_data in enumerate(m_row):
                         if r_idx <= self.contract_data_rng_idx:
                             cell_item = QTableWidgetItem()
@@ -909,7 +909,7 @@ class ModelWindow(QtWidgets.QDialog):
 
                 for m_idx, m_row in enumerate(select_info):
                     table_obj.insertRow(m_idx)
-                    table_obj.setCellWidget(m_idx, 0, self.tableCheckBox())
+                    table_obj.setCellWidget(m_idx, 0, tableCheckBox())
 
                     for r_idx, r_data in enumerate(m_row):
                         if v_type == "contact" and r_idx in self.combobox_idx_in_data[v_type]:
@@ -1024,17 +1024,7 @@ class ModelWindow(QtWidgets.QDialog):
                     if obj_lineEdit.palette().windowText().color().name() == color_set["name"]:
                         obj_lineEdit.setStyleSheet("color: #000000")
             return True
-
-    def tableCheckBox(self):
-        cellWidget = QWidget()
-        layoutCB = QHBoxLayout(cellWidget)
-        checkBox = QCheckBox()
-        layoutCB.addWidget(checkBox)
-        layoutCB.setAlignment(QtCore.Qt.AlignCenter)
-        layoutCB.setContentsMargins(0, 0, 0, 0)
-        cellWidget.setLayout(layoutCB)
-
-        return cellWidget
+    
 
     def lineEditDisable(self, v_type, v_disabled):
         for col in self.lineEdit_disable_col[v_type]:
@@ -1101,6 +1091,19 @@ button_disabled = """
         background-color: #eee;
     }
 """
+
+
+def tableCheckBox():
+    cellWidget = QWidget()
+    layoutCB = QHBoxLayout(cellWidget)
+    checkBox = QCheckBox()
+    layoutCB.addWidget(checkBox)
+    layoutCB.setAlignment(QtCore.Qt.AlignCenter)
+    layoutCB.setContentsMargins(0, 0, 0, 0)
+    cellWidget.setLayout(layoutCB)
+
+    return cellWidget
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

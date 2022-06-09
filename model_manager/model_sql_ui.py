@@ -83,9 +83,9 @@ def sql_execute(v_cur_cursor, v_sql, **kwargs):
 
 def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     cursor = conn.cursor()
-    sql =  "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.FOLDER_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT, A.KEY\n"
+    sql =  "SELECT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, A.FILE_NAME, A.DIR_ROUTE, A.IMAGE_PATH, COUNT(A.NAME) OVER () AS TOTAL_CNT, A.KEY, A.FOLDER_PATH\n"
     sql += "  FROM (\n"
-    sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE, B.FOLDER_PATH, A.KEY\n"
+    sql += "SELECT DISTINCT A.NAME, A.BIRTH_DATE, A.TEL, A.INSTA_ID, A.DATA_DATE, B.FILE_NAME, B.DIR_ROUTE, B.FOLDER_PATH, B.IMAGE_PATH, A.KEY\n"
     sql += "  FROM MODEL_PROFILE A\n"
     sql += "       LEFT OUTER JOIN MODEL_INFO B ON A.KEY = B.KEY\n"
     sql += "       LEFT OUTER JOIN HOBBYNSPEC C ON A.KEY = C.KEY\n"

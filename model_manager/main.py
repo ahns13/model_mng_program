@@ -4,8 +4,7 @@ import win32com.client
 from PyQt5.QtWidgets import *
 
 from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career
-from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy
-from window_info import ModelWindow
+from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy, ModelWindow, tableCheckBox
 from login import LoginWindow
 from model_functions import *
 
@@ -15,7 +14,9 @@ form_class = uic.loadUiType("./model_manage_main.ui")[0]
 class AlignDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(AlignDelegate, self).initStyleOption(option, index)
-        option.displayAlignment = QtCore.Qt.AlignCenter
+
+        if index.column() in [3,4,6]:
+            option.displayAlignment = QtCore.Qt.AlignCenter
 
 
 class IconDelegate(QtWidgets.QStyledItemDelegate):
@@ -24,10 +25,13 @@ class IconDelegate(QtWidgets.QStyledItemDelegate):
         option.decorationSize = option.rect.size()
 
 
-class ListItemDelegate(QtWidgets.QStyledItemDelegate):
+class TableDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
-        super(ListItemDelegate, self).initStyleOption(option, index)
-        option.font.setPixelSize(11)
+        super(TableDelegate, self).initStyleOption(option, index)
+        print(dir(option))
+        print(option.Left)
+        option.font.setPixelSize(12)
+        option.Left = 10
 
 
 class MainWindow(QMainWindow, form_class):
@@ -38,28 +42,48 @@ class MainWindow(QMainWindow, form_class):
         self.login_user_name = None
 
         # tableWidget
-        self.tableColCount = 8  # resultl data - total_cnt index
-        self.tableColIndexRng = [0, 6]
+        self.dataColCountIndex = 9  # total_cnt index of data
+        self.dataToTableMapIndex = [1,3,4,5,6,7,8,9]  # tableIndex
         self.tableClickIndex = {
-            "tablePptFileColIndex": 6,
+            "tablePptFileColIndex": 7,
             "tableDetailInfoIndex": 0
         }
+        self.filePathIndexOfData = 10
+        self.dataKeyIndex = 9
+        self.dataNameIndex = 0
+        self.dataImageFolderIndex = 7
 
         self.tableWidget.setColumnWidth(0, 60)
         self.tableWidget.setColumnWidth(1, 100)
-        self.tableWidget.setColumnWidth(2, 85)
-        self.tableWidget.setColumnWidth(3, 120)
-        self.tableWidget.setColumnWidth(4, 150)
-        self.tableWidget.setColumnWidth(5, 80)
-        self.tableWidget.setColumnWidth(6, 140)
-        self.tableWidget.setColumnWidth(7, 180)
+        self.tableWidget.setColumnWidth(2, 70)
+        self.tableWidget.setColumnWidth(3, 80)
+        self.tableWidget.setColumnWidth(4, 110)
+        self.tableWidget.setColumnWidth(5, 130)
+        self.tableWidget.setColumnWidth(6, 80)
+        self.tableWidget.setColumnWidth(7, 130)
+        self.tableWidget.setColumnWidth(8, 170)
+        self.tableWidget.setColumnWidth(9, 170)
         self.tableWidget.clicked.connect(self.tableClickOpenFile)
+        self.tableWidget.horizontalHeader().setFont(QtGui.QFont("", 8))
+        self.tableWidget.verticalHeader().setDefaultSectionSize(15)
+        self.tableWidget.verticalHeader().setMinimumSectionSize(22)
 
-        cell_delegate = AlignDelegate(self.tableWidget)
-        self.tableWidget.setItemDelegateForColumn(2, cell_delegate)
+        # tableWidget_select_list
+        self.tableWidget_select_list.setColumnWidth(0, 35)
+        self.tableWidget_select_list.setColumnWidth(2, 50)
+        self.tableWidget_select_list.horizontalHeader().setFont(QtGui.QFont("", 8))
+        self.tableWidget_select_list.verticalHeader().setDefaultSectionSize(15)
+        self.tableWidget_select_list.verticalHeader().setMinimumSectionSize(22)
+
+        align_delegate = AlignDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegate(align_delegate)
 
         icon_delegate = IconDelegate(self.tableWidget)
         self.tableWidget.setItemDelegateForColumn(0, icon_delegate)
+
+        table_delegate = TableDelegate(self.tableWidget)
+        self.tableWidget.setItemDelegate(table_delegate)
+        self.tableWidget_select_list.setItemDelegate(table_delegate)
 
         self.ppt_application = win32com.client.Dispatch("PowerPoint.Application")
 
@@ -139,7 +163,7 @@ class MainWindow(QMainWindow, form_class):
         # lineEdit range value
         self.comboBoxRangeConnect()
 
-        self.loginCheck()
+        # self.loginCheck()
 
         self.show()
 
@@ -252,6 +276,39 @@ class MainWindow(QMainWindow, form_class):
             return info_item
         except Exception as e:
             print(e)
+            conn.close()
+            sys.exit()
+
+    def tableFolderColumn(self, v_path):  # 이미지경로 : image + text
+        try:
+            cellWidget = QWidget()
+            layoutCB = QHBoxLayout(cellWidget)
+            list_button = QPushButton()
+            list_button.setFixedWidth(20)
+
+            img_file = "./image/folder.png"
+            info_icon = QtGui.QIcon()
+            info_icon.addPixmap(
+                QtGui.QPixmap(img_file).scaled(17, 19, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation),
+                QtGui.QIcon.Active, QtGui.QIcon.Off)
+            list_button.setIcon(info_icon)
+
+            # list_button.setStyleSheet(list_add_button)
+            list_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            # list_button.clicked.connect(lambda args=kwargs: v_click_function(kwargs))
+            layoutCB.addWidget(list_button)
+
+            # itemWidget = QTableWidgetItem(v_path)
+            # print('a1')
+            # layoutCB.addWidget(itemWidget)
+            # print('a2')
+            layoutCB.setAlignment(QtCore.Qt.AlignLeft)
+            layoutCB.setContentsMargins(0, 0, 0, 0)
+            cellWidget.setLayout(layoutCB)
+            return cellWidget
+        except Exception as e:
+            conn.close()
+            sys.exit()
 
     def tableDataInit(self):  # 테이블 정보 초기화
         self.tablePageNo = 0
@@ -265,7 +322,7 @@ class MainWindow(QMainWindow, form_class):
         self.tablePageNo = 1
         self.searchDataMaker()
         self.tableData = get_model_list(self.tablePageNo, self.pageSize, self.combo_search_data)
-        self.modelDataLen = self.tableData[0][self.tableColCount]
+        self.modelDataLen = self.tableData[0][self.dataColCountIndex]
         self.maxPageSize = math.ceil(self.modelDataLen/self.pageSize)
         self.combo_page.clear()
         self.combo_page.addItems([str(x) for x in range(1, self.maxPageSize+1)])
@@ -304,11 +361,22 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.setRowCount(0)
         for m_idx, m_row in enumerate(v_model_data):
             self.tableWidget.insertRow(m_idx)
-            self.tableWidget.setRowHeight(m_idx, 20)
             self.tableWidget.setItem(m_idx, 0, self.tableInfoIcon())
             for r_idx, r_data in enumerate(m_row):
-                if self.tableColIndexRng[0] <= r_idx <= self.tableColIndexRng[1]:
-                    self.tableWidget.setItem(m_idx, r_idx+1, QTableWidgetItem(str(r_data if r_data else "")))
+                if r_idx < len(self.dataToTableMapIndex):
+                    self.tableWidget.setItem(m_idx, self.dataToTableMapIndex[r_idx], QTableWidgetItem(str(r_data if r_data else "")))
+
+            # list add button
+            self.tableWidget.setCellWidget(m_idx, 2, self.tableButton(
+                "+", self.tableSelectListAdd, model_name=self.tableData[m_idx][0], table_index=m_idx))
+            # image folder
+            print('a1')
+            try:
+                self.tableWidget.item(m_idx, 9).setStyleSheet("QTableWidget::item {padding: 10px;}")
+            except Exception as e:
+                print(e)
+            print('a2')
+            self.tableWidget.setCellWidget(m_idx, 9, self.tableFolderColumn(m_row[self.dataImageFolderIndex]))
 
         self.tableWidget.blockSignals(False)
 
@@ -327,14 +395,14 @@ class MainWindow(QMainWindow, form_class):
             if reply == QMessageBox.Yes:
                 if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
                     try:
-                        file_path = self.tableData[item.row()][7]
+                        file_path = self.tableData[item.row()][self.filePathIndexOfData]
                         self.ppt_application.Presentations.Open(file_path)
                     except:
                         QMessageBox.about(self, "알림", "파일이 존재하는지 확인하십시오.")
                 else:
                     QMessageBox.about(self, "알림", "Z드라이브에 nas 모델 드라이브를 연결하십시오.")
         elif item.column() == self.tableClickIndex["tableDetailInfoIndex"]:
-            self.modelClickOpenWindow(self.tableData[item.row()][9], self.tableData[item.row()][0])
+            self.modelClickOpenWindow(self.tableData[item.row()][self.dataKeyIndex], self.tableData[item.row()][self.dataNameIndex])
 
     def comboBoxRangeConnect(self):
         for type in self.search_types:
@@ -353,6 +421,30 @@ class MainWindow(QMainWindow, form_class):
         else:
             lineEdit_obj.setPlaceholderText("")
 
+    def tableButton(self, v_btn_text, v_click_function, **kwargs):
+        cellWidget = QWidget()
+        layoutCB = QHBoxLayout(cellWidget)
+        list_button = QPushButton(v_btn_text)
+        list_button.setFixedWidth(20)
+        list_button.setStyleSheet(list_add_button)
+        list_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        list_button.clicked.connect(lambda args=kwargs: v_click_function(kwargs))
+        layoutCB.addWidget(list_button)
+        layoutCB.setAlignment(QtCore.Qt.AlignCenter)
+        layoutCB.setContentsMargins(0, 0, 0, 0)
+        cellWidget.setLayout(layoutCB)
+        return cellWidget
+
+    def tableSelectListAdd(self, v_args):
+        row_index = self.tableWidget_select_list.rowCount()
+        self.tableWidget_select_list.insertRow(row_index)
+        self.tableWidget_select_list.setCellWidget(row_index, 0, tableCheckBox())
+        self.tableWidget_select_list.setItem(row_index, 1, QTableWidgetItem(v_args["model_name"]))
+        self.tableWidget_select_list.setCellWidget(row_index, 2, self.tableButton("X", self.selectListRemoveRow, index=row_index))
+
+    def selectListRemoveRow(self, v_index):
+        self.tableWidget_select_list.removeRow(v_index["index"])
+
     def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
         model_window = ModelWindow(self.login_user_name, v_click_model_key)
         model_window.setWindowTitle(model_window.windowTitle() + " - " + (v_click_model_name if v_click_model_name else "신규"))
@@ -366,6 +458,15 @@ class MainWindow(QMainWindow, form_class):
         for window in QApplication.topLevelWidgets():
             window.close()
         conn.close()
+
+
+list_add_button = """
+    font-weight: bold;
+    color:  rgb(255, 0, 110);
+    background-color: white;
+    border: 1px solid rgb(255, 0, 110);
+    border-radius: 5px;
+"""
 
 
 if __name__ == "__main__":
