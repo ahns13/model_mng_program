@@ -529,7 +529,7 @@
       <x>1190</x>
       <y>20</y>
       <width>231</width>
-      <height>161</height>
+      <height>151</height>
      </rect>
     </property>
     <property name="editTriggers">
@@ -551,6 +551,48 @@
      </property>
     </column>
    </widget>
+   <widget class="Line" name="line">
+    <property name="geometry">
+     <rect>
+      <x>1160</x>
+      <y>0</y>
+      <width>20</width>
+      <height>731</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>1284</x>
+      <y>179</y>
+      <width>41</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>ArrowCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">image: url(:/icon/arrow_down.png);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QTreeView" name="treeView_images">
+    <property name="geometry">
+     <rect>
+      <x>1190</x>
+      <y>210</y>
+      <width>231</width>
+      <height>461</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -559,7 +601,7 @@
      <x>0</x>
      <y>0</y>
      <width>1631</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -569,6 +611,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource/model_images.qrc"/>
+ </resources>
  <connections/>
 </ui>

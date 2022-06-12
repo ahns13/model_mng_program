@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-# username = "ADMIN"
-# password = "AhnCsh181223"
-# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+username = "ADMIN"
+password = "AhnCsh181223"
+conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -588,6 +588,17 @@ def loginExec(v_user_name, v_user_pw):
     result = sql_execute(cursor, sql, execute_only=False, er_rollback=True)
     cursor.close()
     return True if result[0][0] == 1 else False
+
+
+def saveImagePath(v_type, v_key, v_path=None):
+    """
+    v_type : insert or delete
+    """
+    cursor = conn.cursor()
+    sql = "UPDATE MODEL_INFO SET IMAGE_PATH = '" + (v_path if v_type == "insert" else "") + "' WHERE KEY = '" + str(v_key) + "'"
+    sql_execute(cursor, sql, execute_only=True, er_rollback=True)
+    cursor.close()
+    return True
 
 
 if __name__ == "__main__":

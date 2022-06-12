@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="icon">
+    <file>arrow_down.png</file>
+    <file>folder.png</file>
+    <file>init.png</file>
+    <file>ppt.png</file>
+  </qresource>
+</RCC>

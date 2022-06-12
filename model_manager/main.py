@@ -3,12 +3,16 @@ import os
 import win32com.client
 from PyQt5.QtWidgets import *
 
-from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career
+from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career, saveImagePath
 from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy, ModelWindow, tableCheckBox
 from login import LoginWindow
 from model_functions import *
+from program_info import image_root
+import model_images_rc
 
-form_class = uic.loadUiType("./model_manage_main.ui")[0]
+
+main_ui_path = "./model_manage_main.ui"
+form_class = uic.loadUiType(main_ui_path)[0]
 
 
 class AlignDelegate(QtWidgets.QStyledItemDelegate):
@@ -28,10 +32,26 @@ class IconDelegate(QtWidgets.QStyledItemDelegate):
 class TableDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(TableDelegate, self).initStyleOption(option, index)
-        print(dir(option))
-        print(option.Left)
         option.font.setPixelSize(12)
-        option.Left = 10
+
+
+class ItemImage(QtGui.QStandardItem):
+    def __init__(self, txt='', image_path='', font_size=11, set_bold=False, color=QtGui.QColor(0, 0, 0)):
+        super().__init__()
+
+        img_font = QtGui.QFont()
+        img_font.setPixelSize(font_size)
+        img_font.setBold(set_bold)
+
+        self.setEditable(False)
+        self.setForeground(color)
+        self.setFont(img_font)
+        self.setText(txt)
+
+        if image_path:
+            image = QtGui.QImage(image_path)
+            image.scaled(QtCore.QSize(60, 40))
+            self.setData(image, QtCore.Qt.DecorationRole)
 
 
 class MainWindow(QMainWindow, form_class):
@@ -41,18 +61,20 @@ class MainWindow(QMainWindow, form_class):
 
         self.login_user_name = None
 
-        # tableWidget
+        # tableWidget var
         self.dataColCountIndex = 9  # total_cnt index of data
-        self.dataToTableMapIndex = [1,3,4,5,6,7,8,9]  # tableIndex
+        self.dataToTableMapIndex = [1,3,4,5,6,7,8]  # tableIndex
         self.tableClickIndex = {
             "tablePptFileColIndex": 7,
             "tableDetailInfoIndex": 0
         }
-        self.filePathIndexOfData = 10
         self.dataKeyIndex = 9
         self.dataNameIndex = 0
-        self.dataImageFolderIndex = 7
+        self.dataNameIndex = 0
+        self.filePathIndexOfData = 10
+        self.imageFolderIndex = [7, 9]  # index pair : data, tableColumn
 
+        # tableWidget
         self.tableWidget.setColumnWidth(0, 60)
         self.tableWidget.setColumnWidth(1, 100)
         self.tableWidget.setColumnWidth(2, 70)
@@ -62,11 +84,12 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget.setColumnWidth(6, 80)
         self.tableWidget.setColumnWidth(7, 130)
         self.tableWidget.setColumnWidth(8, 170)
-        self.tableWidget.setColumnWidth(9, 170)
+        self.tableWidget.setColumnWidth(9, 110)
         self.tableWidget.clicked.connect(self.tableClickOpenFile)
         self.tableWidget.horizontalHeader().setFont(QtGui.QFont("", 8))
         self.tableWidget.verticalHeader().setDefaultSectionSize(15)
         self.tableWidget.verticalHeader().setMinimumSectionSize(22)
+        self.tableWidget.setWordWrap(False)
 
         # tableWidget_select_list
         self.tableWidget_select_list.setColumnWidth(0, 35)
@@ -74,6 +97,9 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget_select_list.horizontalHeader().setFont(QtGui.QFont("", 8))
         self.tableWidget_select_list.verticalHeader().setDefaultSectionSize(15)
         self.tableWidget_select_list.verticalHeader().setMinimumSectionSize(22)
+        self.tableWidget_select_list.clicked.connect(self.addImagesForClickedModel)
+
+        self.select_model_data = []
 
         align_delegate = AlignDelegate(self.tableWidget)
         self.tableWidget.setItemDelegate(align_delegate)
@@ -140,14 +166,11 @@ class MainWindow(QMainWindow, form_class):
         for s_type in self.search_types:
             btn_obj = getattr(self, "btn_" + s_type)
             btn_obj.clicked.connect(lambda checked, p_type=s_type: self.searchItemAdd(p_type))
-            # lambda 사용 시 for 동적 할당에서 파라미터가 마지막 값으로 할당되기 때문에 lambda 파라미터를 콜백 파라미터 개수에 맞게 설정해줘야 한다.
-            # lineEdit returnPressed lambda : 파라미터 2개 생성
 
         # lineEdit enter 눌렀을 때 처리
         for s_type in self.search_types:
             lineEdit_obj = getattr(self, "lineEdit_" + s_type)
             lineEdit_obj.returnPressed.connect(lambda p_type=s_type: self.searchItemAdd(p_type))
-            # lineEdit returnPressed lambda : 파라미터 1개 생성
 
         self.itemLayout = QBoxLayout(QBoxLayout.LeftToRight)
         self.gbox_input_item.setLayout(self.itemLayout)
@@ -268,7 +291,7 @@ class MainWindow(QMainWindow, form_class):
 
     def tableInfoIcon(self):  # 상세정보 icon
         try:
-            img_file = "./image/ppt.png"
+            img_file = ":/icon/ppt.png"
             info_item = QtWidgets.QTableWidgetItem()
             info_icon = QtGui.QIcon()
             info_icon.addPixmap(QtGui.QPixmap(img_file).scaled(15, 17, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation), QtGui.QIcon.Active, QtGui.QIcon.Off)
@@ -279,36 +302,66 @@ class MainWindow(QMainWindow, form_class):
             conn.close()
             sys.exit()
 
-    def tableFolderColumn(self, v_path):  # 이미지경로 : image + text
+    def tableFolderColumn(self, v_row_index, v_path):  # 이미지경로 button : image + text
         try:
             cellWidget = QWidget()
             layoutCB = QHBoxLayout(cellWidget)
             list_button = QPushButton()
             list_button.setFixedWidth(20)
 
-            img_file = "./image/folder.png"
+            img_file = ":/icon/folder.png"
             info_icon = QtGui.QIcon()
             info_icon.addPixmap(
                 QtGui.QPixmap(img_file).scaled(17, 19, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation),
                 QtGui.QIcon.Active, QtGui.QIcon.Off)
             list_button.setIcon(info_icon)
-
-            # list_button.setStyleSheet(list_add_button)
             list_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            # list_button.clicked.connect(lambda args=kwargs: v_click_function(kwargs))
+            list_button.setToolTip("버튼을 눌러 폴더 목록에서\n모델에 맞는 폴더를 선택해\n이미지 폴더를 연결할 수 있습니다.")
+            list_button.clicked.connect(lambda checked, p_row_index=v_row_index: self.openImageFolder(p_row_index))
             layoutCB.addWidget(list_button)
 
-            # itemWidget = QTableWidgetItem(v_path)
-            # print('a1')
-            # layoutCB.addWidget(itemWidget)
-            # print('a2')
-            layoutCB.setAlignment(QtCore.Qt.AlignLeft)
+            list_label = QLabel()
+            list_label.setText("매핑 완료" if v_path else "X")
+            list_label.setAlignment(QtCore.Qt.AlignCenter)
+            layoutCB.addWidget(list_label)
+
             layoutCB.setContentsMargins(0, 0, 0, 0)
             cellWidget.setLayout(layoutCB)
             return cellWidget
         except Exception as e:
             conn.close()
             sys.exit()
+
+    def openImageFolder(self, v_row_index):
+        msgbox = QMessageBox()
+        msgbox.setWindowTitle("이미지 매핑 설정")
+        msgbox.setText('매핑을 등록 또는 삭제를 위해\n버튼을 클릭하세요.')
+
+        msgbox.addButton('매핑 등록', QtWidgets.QMessageBox.YesRole)
+        msgbox.addButton('매핑 삭제', QtWidgets.QMessageBox.NoRole)
+
+        bttn = msgbox.exec_()
+        # yes: 0, no: 1
+        if bttn:
+            self.imageMapDel(v_row_index)
+        else:
+            self.imageMapAdd(v_row_index)
+
+    def imageMapAdd(self, v_row_index):
+        click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
+        image_path = QtWidgets.QFileDialog.getExistingDirectory(None, click_model[1], image_root,
+                                                          QtWidgets.QFileDialog.ShowDirsOnly)
+        if image_path and saveImagePath("insert", click_model[0], os.path.abspath(image_path)):
+            conn.commit()
+            self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
+            QMessageBox.about(self, "알림", "매핑 성공")
+
+    def imageMapDel(self, v_row_index):
+        click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
+        if saveImagePath("delete", click_model[0]):
+            conn.commit()
+            self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("X")
+            QMessageBox.about(self, "알림", "매핑 삭제 완료")
 
     def tableDataInit(self):  # 테이블 정보 초기화
         self.tablePageNo = 0
@@ -368,15 +421,10 @@ class MainWindow(QMainWindow, form_class):
 
             # list add button
             self.tableWidget.setCellWidget(m_idx, 2, self.tableButton(
-                "+", self.tableSelectListAdd, model_name=self.tableData[m_idx][0], table_index=m_idx))
+                "+", self.tableSelectListAdd, model_name=self.tableData[m_idx][self.dataNameIndex], table_index=m_idx))
             # image folder
-            print('a1')
-            try:
-                self.tableWidget.item(m_idx, 9).setStyleSheet("QTableWidget::item {padding: 10px;}")
-            except Exception as e:
-                print(e)
-            print('a2')
-            self.tableWidget.setCellWidget(m_idx, 9, self.tableFolderColumn(m_row[self.dataImageFolderIndex]))
+            self.tableWidget.setCellWidget(m_idx, self.imageFolderIndex[1], self.tableFolderColumn(
+                m_idx, m_row[self.imageFolderIndex[0]]))
 
         self.tableWidget.blockSignals(False)
 
@@ -393,7 +441,7 @@ class MainWindow(QMainWindow, form_class):
             reply = QMessageBox.question(self, " ", "선택한 모델의 ppt 파일을 실행합니다.",
                                          QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.Yes:
-                if os.path.exists("Z:\\"):  # Z드라이브로 RaiDrive를 설정해야 함
+                if os.path.exists("Z:\\Chicmodle agency\\"):  # Z드라이브로 RaiDrive를 설정해야 함
                     try:
                         file_path = self.tableData[item.row()][self.filePathIndexOfData]
                         self.ppt_application.Presentations.Open(file_path)
@@ -442,8 +490,11 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget_select_list.setItem(row_index, 1, QTableWidgetItem(v_args["model_name"]))
         self.tableWidget_select_list.setCellWidget(row_index, 2, self.tableButton("X", self.selectListRemoveRow, index=row_index))
 
+        self.select_model_data.append(self.tableData[row_index])
+
     def selectListRemoveRow(self, v_index):
         self.tableWidget_select_list.removeRow(v_index["index"])
+        self.select_model_data.pop(v_index["index"])
 
     def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
         model_window = ModelWindow(self.login_user_name, v_click_model_key)
@@ -453,6 +504,35 @@ class MainWindow(QMainWindow, form_class):
     def loginCheck(self):
         login_window = LoginWindow()
         login_window.exec_()
+
+    def addImagesForClickedModel(self, item):
+        if item.column() == 1:
+            # self.treeView_images.reset()
+            # self.tree_model = QFileSystemModel()
+            # self.tree_model.setRootPath(image_root)
+            # self.treeView_images.setModel(self.tree_model)
+            # self.treeView_images.setRootIndex(self.tree_model.index(self.select_model_data[item.row()][self.imageFolderIndex[0]]))
+            # self.treeView_images.setColumnWidth(0, 200)
+            # self.treeView_images.setAlternatingRowColors(True)
+            folder_list = os.scandir(self.select_model_data[item.row()][self.imageFolderIndex[0]])
+
+            try:
+                tree_model = QtGui.QStandardItemModel()
+                root_node = tree_model.invisibleRootItem()
+                folders = ItemImage(item.data(), '', set_bold=True)
+                for f in folder_list:
+                    if f.is_dir():
+                        f_data = ItemImage(f.name, "./resource/folder.png")
+                        folders.appendRow(f_data)
+                    elif f.is_file():
+                        print(f.path)
+                        f_data = ItemImage(f.name, f.path)
+                        folders.appendRow(f_data)
+                root_node.appendRow(folders)
+                self.treeView_images.setModel(tree_model)
+                self.treeView_images.expandAll()
+            except Exception as e:
+                print(e)
 
     def closeEvent(self, event):
         for window in QApplication.topLevelWidgets():
@@ -471,5 +551,5 @@ list_add_button = """
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
+    main_window = MainWindow()
     app.exec_()

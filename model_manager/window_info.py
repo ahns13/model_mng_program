@@ -9,6 +9,8 @@ from model_sql_ui import conn, flagStatus, info_profile, updateProfile, updateHo
     info_career, updateCareer,getCMCodeList, info_contact, updateContact, getColType, getMaxKeyOfProfile, \
     info_contract, updateContract, info_other, updateOther
 from model_functions import *
+import model_images_rc
+
 
 flag_massage = "다른 사용자가 모델 데이터를 작업 중이니\n해당 사용자의 작업 종료 후 다시 창을 여십시오."
 color_set = {
@@ -1034,7 +1036,7 @@ class ModelWindow(QtWidgets.QDialog):
                 getattr(self, "lineEdit_" + v_type + "_" + col).setDisabled(v_disabled)
 
     def buttonRefresh(self, v_type):
-        img_file = "./image/init.png"
+        img_file = ":/icon/init.png"
         info_icon = QtGui.QIcon()
         pixmap = QtGui.QPixmap(img_file).scaled(15, 17, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         info_icon.addPixmap(pixmap, QtGui.QIcon.Active, QtGui.QIcon.Off)
