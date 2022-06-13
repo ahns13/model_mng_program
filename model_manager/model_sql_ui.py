@@ -2,10 +2,10 @@ import importlib
 import sys
 
 cx_Oracle = importlib.import_module("cx_Oracle")
-username = "ADMIN"
-password = "AhnCsh181223"
-conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
-# conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
+# username = "ADMIN"
+# password = "AhnCsh181223"
+# conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
+conn = cx_Oracle.connect(user="AHN_TEST", password="AHN_TEST3818", dsn="cogdw_144")
 
 
 def condition_add(v_tab_alias, v_srch_dir):
@@ -112,7 +112,7 @@ def get_model_list(v_page_no, v_page_size,  v_search_dir={}):
     sql += " FETCH NEXT " + str(v_page_size) + " ROWS ONLY"
     result = sql_execute(cursor, sql, execute_only=False)
     cursor.close()
-    return result
+    return list(map(list, result))
 
 
 def get_comboBox_list_a(v_combo_type):

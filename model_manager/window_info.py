@@ -1066,6 +1066,7 @@ class ModelWindow(QtWidgets.QDialog):
             pass
 
     def closeEvent(self, event):
+        print(event)
         if self.select_key and self.flag_status == 1:
             flagStatus(self.select_key, 0)
 

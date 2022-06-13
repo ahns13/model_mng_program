@@ -11,8 +11,15 @@ from program_info import image_root
 import model_images_rc
 
 
-main_ui_path = "./model_manage_main.ui"
+main_ui_path = "./model_manage_main.ui"  # pyinstaller 작업 시 전체 경로 입력
 form_class = uic.loadUiType(main_ui_path)[0]
+
+widget_width = 0
+
+
+def treeWidgetWidth(v_value):
+    global widget_width
+    widget_width = widget_width if widget_width > v_value else v_value
 
 
 class AlignDelegate(QtWidgets.QStyledItemDelegate):
@@ -35,23 +42,34 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
         option.font.setPixelSize(12)
 
 
-class ItemImage(QtGui.QStandardItem):
+class TreeWidget(QWidget):
     def __init__(self, txt='', image_path='', font_size=11, set_bold=False, color=QtGui.QColor(0, 0, 0)):
         super().__init__()
 
-        img_font = QtGui.QFont()
-        img_font.setPixelSize(font_size)
-        img_font.setBold(set_bold)
+        # img_font = QtGui.QFont()
+        # img_font.setPixelSize(font_size)
+        # img_font.setBold(set_bold)
+        #
+        # self.setEditable(False)
+        # self.setForeground(color)
+        # self.setFont(img_font)
 
-        self.setEditable(False)
-        self.setForeground(color)
-        self.setFont(img_font)
-        self.setText(txt)
+        layout = QHBoxLayout()
+        image_label = QLabel()
 
         if image_path:
-            image = QtGui.QImage(image_path)
-            image.scaled(QtCore.QSize(60, 40))
-            self.setData(image, QtCore.Qt.DecorationRole)
+            image = QtGui.QPixmap(image_path)
+            if image.size().width() > 60:
+                image = image.scaledToWidth(60)
+            image_label.setPixmap(image)
+        layout.addWidget(image_label)
+
+        text_label = QLabel()
+        text_label.setText(txt)
+        layout.addWidget(text_label)
+
+        self.setLayout(layout)
+        treeWidgetWidth(self.sizeHint().width())
 
 
 class MainWindow(QMainWindow, form_class):
@@ -337,23 +355,26 @@ class MainWindow(QMainWindow, form_class):
         msgbox.setWindowTitle("이미지 매핑 설정")
         msgbox.setText('매핑을 등록 또는 삭제를 위해\n버튼을 클릭하세요.')
 
-        msgbox.addButton('매핑 등록', QtWidgets.QMessageBox.YesRole)
-        msgbox.addButton('매핑 삭제', QtWidgets.QMessageBox.NoRole)
+        add_btn = msgbox.addButton('매핑 등록', QtWidgets.QMessageBox.YesRole)
+        del_btn = msgbox.addButton('매핑 삭제', QtWidgets.QMessageBox.YesRole)
 
-        bttn = msgbox.exec_()
+        msgbox.exec_()
+        reply = msgbox.buttonRole(msgbox.clickedButton())
         # yes: 0, no: 1
-        if bttn:
-            self.imageMapDel(v_row_index)
-        else:
+        if msgbox.clickedButton() == add_btn:
             self.imageMapAdd(v_row_index)
+        elif msgbox.clickedButton() == del_btn:
+            self.imageMapDel(v_row_index)
 
     def imageMapAdd(self, v_row_index):
         click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
         image_path = QtWidgets.QFileDialog.getExistingDirectory(None, click_model[1], image_root,
                                                           QtWidgets.QFileDialog.ShowDirsOnly)
-        if image_path and saveImagePath("insert", click_model[0], os.path.abspath(image_path)):
+        image_path = os.path.abspath(image_path)
+        if image_path and saveImagePath("insert", click_model[0], image_path):
             conn.commit()
             self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
+            self.tableData[v_row_index][self.imageFolderIndex[0]] = image_path
             QMessageBox.about(self, "알림", "매핑 성공")
 
     def imageMapDel(self, v_row_index):
@@ -361,6 +382,7 @@ class MainWindow(QMainWindow, form_class):
         if saveImagePath("delete", click_model[0]):
             conn.commit()
             self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("X")
+            self.tableData[v_row_index][self.imageFolderIndex[0]] = ""
             QMessageBox.about(self, "알림", "매핑 삭제 완료")
 
     def tableDataInit(self):  # 테이블 정보 초기화
@@ -506,33 +528,30 @@ class MainWindow(QMainWindow, form_class):
         login_window.exec_()
 
     def addImagesForClickedModel(self, item):
-        if item.column() == 1:
-            # self.treeView_images.reset()
-            # self.tree_model = QFileSystemModel()
-            # self.tree_model.setRootPath(image_root)
-            # self.treeView_images.setModel(self.tree_model)
-            # self.treeView_images.setRootIndex(self.tree_model.index(self.select_model_data[item.row()][self.imageFolderIndex[0]]))
-            # self.treeView_images.setColumnWidth(0, 200)
-            # self.treeView_images.setAlternatingRowColors(True)
-            folder_list = os.scandir(self.select_model_data[item.row()][self.imageFolderIndex[0]])
+        def folder_maker(v_file_path, v_parent_tree):
+            folder_list = os.scandir(v_file_path)
+            for f in folder_list:
+                if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
+                    item_f = QTreeWidgetItem(v_parent_tree)
+                    image_f = TreeWidget(f.name, f.path)
+                    cur_tree_widget.setItemWidget(item_f, 0, image_f)
+                elif f.is_dir():
+                    item_f = QTreeWidgetItem(v_parent_tree)
+                    item_f.setText(0, f.name)
+                    folder_maker(f.path, item_f)
+                else:
+                    item_f = QTreeWidgetItem(v_parent_tree)
+                    item_f.setText(0, f.name)
 
-            try:
-                tree_model = QtGui.QStandardItemModel()
-                root_node = tree_model.invisibleRootItem()
-                folders = ItemImage(item.data(), '', set_bold=True)
-                for f in folder_list:
-                    if f.is_dir():
-                        f_data = ItemImage(f.name, "./resource/folder.png")
-                        folders.appendRow(f_data)
-                    elif f.is_file():
-                        print(f.path)
-                        f_data = ItemImage(f.name, f.path)
-                        folders.appendRow(f_data)
-                root_node.appendRow(folders)
-                self.treeView_images.setModel(tree_model)
-                self.treeView_images.expandAll()
-            except Exception as e:
-                print(e)
+        if item.column() == 1:
+            global widget_width
+            widget_width = 0
+            cur_tree_widget = self.treeWidget_images
+            cur_tree_widget.setColumnCount(1)
+            item_top = QTreeWidgetItem(cur_tree_widget, [item.data()])
+            folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top)
+            print(widget_width)
+            cur_tree_widget.setColumnWidth(0, widget_width+150)
 
     def closeEvent(self, event):
         for window in QApplication.topLevelWidgets():
