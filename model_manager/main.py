@@ -58,15 +58,18 @@ class TreeWidget(QWidget):
         image_label = QLabel()
 
         if image_path:
-            image = QtGui.QPixmap(image_path)
-            if image.size().width() > 60:
+            image = QtGui.QPixmap(os.path.abspath(image_path)).scaled(25, 30)
+            print(image.size())
+            print(image.rect())
+            if image.width() > 60:
                 image = image.scaledToWidth(60)
             image_label.setPixmap(image)
+            print(image_label.size())
         layout.addWidget(image_label)
 
         text_label = QLabel()
         text_label.setText(txt)
-        layout.addWidget(text_label)
+        layout.addWidget(text_label, QtCore.Qt.AlignLeft)
 
         self.setLayout(layout)
         treeWidgetWidth(self.sizeHint().width())
@@ -357,9 +360,10 @@ class MainWindow(QMainWindow, form_class):
 
         add_btn = msgbox.addButton('매핑 등록', QtWidgets.QMessageBox.YesRole)
         del_btn = msgbox.addButton('매핑 삭제', QtWidgets.QMessageBox.YesRole)
+        msgbox.addButton('취소', QtWidgets.QMessageBox.NoRole)
 
         msgbox.exec_()
-        reply = msgbox.buttonRole(msgbox.clickedButton())
+        # reply = msgbox.buttonRole(msgbox.clickedButton())
         # yes: 0, no: 1
         if msgbox.clickedButton() == add_btn:
             self.imageMapAdd(v_row_index)
@@ -370,12 +374,13 @@ class MainWindow(QMainWindow, form_class):
         click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
         image_path = QtWidgets.QFileDialog.getExistingDirectory(None, click_model[1], image_root,
                                                           QtWidgets.QFileDialog.ShowDirsOnly)
-        image_path = os.path.abspath(image_path)
-        if image_path and saveImagePath("insert", click_model[0], image_path):
-            conn.commit()
-            self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
-            self.tableData[v_row_index][self.imageFolderIndex[0]] = image_path
-            QMessageBox.about(self, "알림", "매핑 성공")
+        if image_path:
+            image_path = os.path.abspath(image_path)
+            if saveImagePath("insert", click_model[0], image_path):
+                conn.commit()
+                self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
+                self.tableData[v_row_index][self.imageFolderIndex[0]] = image_path
+                QMessageBox.about(self, "알림", "매핑 성공")
 
     def imageMapDel(self, v_row_index):
         click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
@@ -549,8 +554,12 @@ class MainWindow(QMainWindow, form_class):
             cur_tree_widget = self.treeWidget_images
             cur_tree_widget.setColumnCount(1)
             item_top = QTreeWidgetItem(cur_tree_widget, [item.data()])
-            folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top)
-            print(widget_width)
+            try:
+                folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top)
+            except FileNotFoundError as e:
+                QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
+                conn.close()
+                sys.exit()
             cur_tree_widget.setColumnWidth(0, widget_width+150)
 
     def closeEvent(self, event):
