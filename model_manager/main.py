@@ -43,32 +43,26 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class TreeWidget(QWidget):
-    def __init__(self, txt='', image_path='', font_size=11, set_bold=False, color=QtGui.QColor(0, 0, 0)):
+    def __init__(self, txt='', image_path='', font_size=11, select_image_list=None):
         super().__init__()
 
-        # img_font = QtGui.QFont()
-        # img_font.setPixelSize(font_size)
-        # img_font.setBold(set_bold)
-        #
-        # self.setEditable(False)
-        # self.setForeground(color)
-        # self.setFont(img_font)
+        tree_item_font = QtGui.QFont()
+        tree_item_font.setPixelSize(font_size)
 
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         image_label = QLabel()
+        image_label.setFixedSize(150, 150)
 
         if image_path:
-            image = QtGui.QPixmap(os.path.abspath(image_path)).scaled(25, 30)
-            print(image.size())
-            print(image.rect())
-            if image.width() > 60:
-                image = image.scaledToWidth(60)
+            image = QtGui.QPixmap(os.path.abspath(image_path))
+            select_image_list[txt] = image
+            image = image.scaledToWidth(160)
             image_label.setPixmap(image)
-            print(image_label.size())
         layout.addWidget(image_label)
 
         text_label = QLabel()
         text_label.setText(txt)
+        text_label.setFont(tree_item_font)
         layout.addWidget(text_label, QtCore.Qt.AlignLeft)
 
         self.setLayout(layout)
@@ -121,6 +115,7 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget_select_list.clicked.connect(self.addImagesForClickedModel)
 
         self.select_model_data = []
+        self.select_model_images = {}
 
         align_delegate = AlignDelegate(self.tableWidget)
         self.tableWidget.setItemDelegate(align_delegate)
@@ -135,6 +130,7 @@ class MainWindow(QMainWindow, form_class):
         self.ppt_application = win32com.client.Dispatch("PowerPoint.Application")
 
         self.noSearchMsg()
+
         # 버튼: 조회
         self.btn_search.clicked.connect(self.getDefaultTableData)
         self.buttonStyleCss(self.btn_search, "rgb(58, 134, 255)")
@@ -343,6 +339,9 @@ class MainWindow(QMainWindow, form_class):
 
             list_label = QLabel()
             list_label.setText("매핑 완료" if v_path else "X")
+            label_font = QtGui.QFont()
+            label_font.setPixelSize(12)
+            list_label.setFont(label_font)
             list_label.setAlignment(QtCore.Qt.AlignCenter)
             layoutCB.addWidget(list_label)
 
@@ -376,11 +375,15 @@ class MainWindow(QMainWindow, form_class):
                                                           QtWidgets.QFileDialog.ShowDirsOnly)
         if image_path:
             image_path = os.path.abspath(image_path)
-            if saveImagePath("insert", click_model[0], image_path):
-                conn.commit()
-                self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
-                self.tableData[v_row_index][self.imageFolderIndex[0]] = image_path
-                QMessageBox.about(self, "알림", "매핑 성공")
+            if image_path == os.path.abspath(image_root):
+                QMessageBox.about(self, "알림", "기존 폴더를 대상으로 지정할 수 없습니다. 모델 폴더를 선택해 주세요.")
+                self.imageMapAdd(self, v_row_index)
+            else:
+                if saveImagePath("insert", click_model[0], image_path):
+                    conn.commit()
+                    self.tableWidget.cellWidget(v_row_index, self.imageFolderIndex[1]).findChild(QLabel).setText("매핑 완료")
+                    self.tableData[v_row_index][self.imageFolderIndex[0]] = image_path
+                    QMessageBox.about(self, "알림", "매핑 성공")
 
     def imageMapDel(self, v_row_index):
         click_model = list(map(self.tableData[v_row_index].__getitem__, [self.dataKeyIndex, self.dataNameIndex]))
@@ -533,34 +536,43 @@ class MainWindow(QMainWindow, form_class):
         login_window.exec_()
 
     def addImagesForClickedModel(self, item):
-        def folder_maker(v_file_path, v_parent_tree):
+        self.select_model_images[item.row()] = {}
+
+        def folder_maker(v_file_path, v_parent_tree, v_tree_depth):
+            v_tree_depth += 1
             folder_list = os.scandir(v_file_path)
             for f in folder_list:
                 if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
                     item_f = QTreeWidgetItem(v_parent_tree)
-                    image_f = TreeWidget(f.name, f.path)
+                    image_f = TreeWidget(f.name, f.path, main_window=self.select_model_images[item.row()])
                     cur_tree_widget.setItemWidget(item_f, 0, image_f)
                 elif f.is_dir():
                     item_f = QTreeWidgetItem(v_parent_tree)
                     item_f.setText(0, f.name)
-                    folder_maker(f.path, item_f)
+                    folder_maker(f.path, item_f, v_tree_depth)
                 else:
                     item_f = QTreeWidgetItem(v_parent_tree)
                     item_f.setText(0, f.name)
+            return v_tree_depth
 
         if item.column() == 1:
             global widget_width
             widget_width = 0
+            tree_depth = 1
+
             cur_tree_widget = self.treeWidget_images
+            cur_tree_widget.clear()
             cur_tree_widget.setColumnCount(1)
             item_top = QTreeWidgetItem(cur_tree_widget, [item.data()])
             try:
-                folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top)
+                tree_depth = folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top, tree_depth)
             except FileNotFoundError as e:
                 QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
                 conn.close()
                 sys.exit()
-            cur_tree_widget.setColumnWidth(0, widget_width+150)
+
+            cur_tree_widget.setColumnWidth(0, cur_tree_widget.indentation()*(tree_depth+1)+widget_width)
+            cur_tree_widget.setStyleSheet("QTreeWidget { font-size: 12px; }")
 
     def closeEvent(self, event):
         for window in QApplication.topLevelWidgets():

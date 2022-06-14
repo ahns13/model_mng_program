@@ -592,7 +592,16 @@
       <height>461</height>
      </rect>
     </property>
+    <property name="indentation">
+     <number>10</number>
+    </property>
     <attribute name="headerVisible">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="headerCascadingSectionResizes">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="headerStretchLastSection">
      <bool>true</bool>
     </attribute>
    </widget>
