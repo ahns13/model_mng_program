@@ -14,6 +14,7 @@ import model_images_rc
 main_ui_path = "./model_manage_main.ui"  # pyinstaller 작업 시 전체 경로 입력
 form_class = uic.loadUiType(main_ui_path)[0]
 
+
 widget_width = 0
 
 
@@ -54,7 +55,7 @@ class TreeWidget(QWidget):
         image_label.setFixedSize(150, 150)
 
         if image_path:
-            image = QtGui.QPixmap(os.path.abspath(image_path))
+            image = QtGui.QPixmap(r"{}".format(image_path))
             select_image_list[txt] = image
             image = image.scaledToWidth(160)
             image_label.setPixmap(image)
@@ -460,7 +461,8 @@ class MainWindow(QMainWindow, form_class):
 
     def noSearchMsg(self):  # 조회된 결과가 없을 때
         self.tableDataInit()
-        self.tableWidget.setRowCount(1)
+        self.tableWidget.setRowCount(0)
+        self.tableWidget.insertRow(0)
         self.tableWidget.setSpan(0, 0, 1, self.tableWidget.columnCount())
         self.tableWidget.setItem(0, 0, QTableWidgetItem("조회된 데이터가 없습니다."))
         self.tableWidget.item(0, 0).setTextAlignment(QtCore.Qt.AlignCenter)
@@ -519,8 +521,7 @@ class MainWindow(QMainWindow, form_class):
         self.tableWidget_select_list.setCellWidget(row_index, 0, tableCheckBox())
         self.tableWidget_select_list.setItem(row_index, 1, QTableWidgetItem(v_args["model_name"]))
         self.tableWidget_select_list.setCellWidget(row_index, 2, self.tableButton("X", self.selectListRemoveRow, index=row_index))
-
-        self.select_model_data.append(self.tableData[row_index])
+        self.select_model_data.append(self.tableData[v_args["table_index"]])
 
     def selectListRemoveRow(self, v_index):
         self.tableWidget_select_list.removeRow(v_index["index"])
@@ -544,7 +545,7 @@ class MainWindow(QMainWindow, form_class):
             for f in folder_list:
                 if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
                     item_f = QTreeWidgetItem(v_parent_tree)
-                    image_f = TreeWidget(f.name, f.path, main_window=self.select_model_images[item.row()])
+                    image_f = TreeWidget(f.name, f.path, select_image_list=self.select_model_images[item.row()])
                     cur_tree_widget.setItemWidget(item_f, 0, image_f)
                 elif f.is_dir():
                     item_f = QTreeWidgetItem(v_parent_tree)
@@ -556,6 +557,7 @@ class MainWindow(QMainWindow, form_class):
             return v_tree_depth
 
         if item.column() == 1:
+            loading_obj = self.loadingDisplay()
             global widget_width
             widget_width = 0
             tree_depth = 1
@@ -566,6 +568,7 @@ class MainWindow(QMainWindow, form_class):
             item_top = QTreeWidgetItem(cur_tree_widget, [item.data()])
             try:
                 tree_depth = folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top, tree_depth)
+                loading_obj.hide()
             except FileNotFoundError as e:
                 QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
                 conn.close()
@@ -579,6 +582,23 @@ class MainWindow(QMainWindow, form_class):
             window.close()
         conn.close()
 
+    def loadingDisplay(self):
+        try:
+            widget = QWidget()
+            loading = QLabel()
+            layout = QHBoxLayout()
+            layout.addWidget(loading)
+            layout.setAlignment(QtCore.Qt.AlignCenter)
+            movie = QtGui.QMovie(r"D:\파일\python\model\model_manager\image\loading.gif")
+            movie.setScaledSize(QtCore.QSize().scaled(300, 300, QtCore.Qt.KeepAspectRatio))
+            loading.setMovie(movie)
+            widget.setLayout(layout)
+            self.setCentralWidget(widget)
+            movie.start()
+            return widget
+        except Exception as e:
+            print(e)
+
 
 list_add_button = """
     font-weight: bold;
@@ -590,6 +610,7 @@ list_add_button = """
 
 
 if __name__ == "__main__":
+    QtCore.QCoreApplication.addLibraryPath(r"..\model_env\Lib\site-packages\PyQt5\Qt5\plugins")
     app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
     app.exec_()
