@@ -10,6 +10,10 @@ from model_functions import *
 from program_info import image_root
 import model_images_rc
 
+import logging
+import traceback
+
+logging.basicConfig(filename='./test.log', level=logging.ERROR)
 
 main_ui_path = "./model_manage_main.ui"  # pyinstaller 작업 시 전체 경로 입력
 form_class = uic.loadUiType(main_ui_path)[0]
@@ -55,9 +59,10 @@ class TreeWidget(QWidget):
         image_label.setFixedSize(150, 150)
 
         if image_path:
-            image = QtGui.QPixmap(r"{}".format(image_path))
+            image = QtGui.QImage(r"{}".format(image_path))
+            image = QtGui.QPixmap.fromImage(image).scaledToWidth(160)
+            # image = QtGui.QPixmap(r"{}".format(image_path))
             select_image_list[txt] = image
-            image = image.scaledToWidth(160)
             image_label.setPixmap(image)
         layout.addWidget(image_label)
 
@@ -203,6 +208,9 @@ class MainWindow(QMainWindow, form_class):
 
         # lineEdit range value
         self.comboBoxRangeConnect()
+
+        # treeWidget
+        self.treeWidget_images.setHeaderLabels([""])
 
         # self.loginCheck()
 
@@ -526,6 +534,7 @@ class MainWindow(QMainWindow, form_class):
     def selectListRemoveRow(self, v_index):
         self.tableWidget_select_list.removeRow(v_index["index"])
         self.select_model_data.pop(v_index["index"])
+        self.treeWidget_images.clear()
 
     def modelClickOpenWindow(self, v_click_model_key, v_click_model_name=None):
         model_window = ModelWindow(self.login_user_name, v_click_model_key)
@@ -536,46 +545,55 @@ class MainWindow(QMainWindow, form_class):
         login_window = LoginWindow()
         login_window.exec_()
 
+    def folderMaker(self, v_file_path, v_parent_tree, v_tree_depth, v_item_row):
+        v_tree_depth += 1
+        folder_list = os.scandir(v_file_path)
+
+        # recursive 함수 적용 시 connect 함수에 파라미터로 timer instance도 넘겨야 한다. timer instance를 self에 선언하면 안된다.
+        _timer = QtCore.QTimer()
+        _timer.timeout.connect(lambda: self.imageMaker(folder_list, v_parent_tree, v_tree_depth, v_item_row, _timer))
+        _timer.start(10)
+
+    def imageMaker(self, v_folder_list, v_parent_tree, v_tree_depth, v_item_row, v_timer):
+        try:
+            f = next(v_folder_list)
+        except StopIteration:
+            v_timer.stop()
+        else:
+            if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
+                item_f = QTreeWidgetItem(v_parent_tree)
+                image_f = TreeWidget(f.name, f.path, select_image_list=self.select_model_images[v_item_row])
+                self.treeWidget_images.setItemWidget(item_f, 0, image_f)
+            elif f.is_dir():
+                item_f = QTreeWidgetItem(v_parent_tree)
+                item_f.setText(0, f.name)
+                self.folderMaker(f.path, item_f, v_tree_depth, v_item_row)
+            else:
+                item_f = QTreeWidgetItem(v_parent_tree)
+                item_f.setText(0, f.name)
+
     def addImagesForClickedModel(self, item):
         self.select_model_images[item.row()] = {}
 
-        def folder_maker(v_file_path, v_parent_tree, v_tree_depth):
-            v_tree_depth += 1
-            folder_list = os.scandir(v_file_path)
-            for f in folder_list:
-                if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
-                    item_f = QTreeWidgetItem(v_parent_tree)
-                    image_f = TreeWidget(f.name, f.path, select_image_list=self.select_model_images[item.row()])
-                    cur_tree_widget.setItemWidget(item_f, 0, image_f)
-                elif f.is_dir():
-                    item_f = QTreeWidgetItem(v_parent_tree)
-                    item_f.setText(0, f.name)
-                    folder_maker(f.path, item_f, v_tree_depth)
-                else:
-                    item_f = QTreeWidgetItem(v_parent_tree)
-                    item_f.setText(0, f.name)
-            return v_tree_depth
-
         if item.column() == 1:
-            loading_obj = self.loadingDisplay()
-            global widget_width
-            widget_width = 0
-            tree_depth = 1
+            if os.path.exists("Z:\\Chicmodle agency\\"):
+                # loading_obj = self.loadingDisplay()
+                global widget_width
+                widget_width = 0
+                tree_depth = 1
 
-            cur_tree_widget = self.treeWidget_images
-            cur_tree_widget.clear()
-            cur_tree_widget.setColumnCount(1)
-            item_top = QTreeWidgetItem(cur_tree_widget, [item.data()])
-            try:
-                tree_depth = folder_maker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top, tree_depth)
-                loading_obj.hide()
-            except FileNotFoundError as e:
+                self.treeWidget_images.clear()
+                self.treeWidget_images.setColumnCount(1)
+                item_top = QTreeWidgetItem(self.treeWidget_images, [item.data()])
+                try:
+                    self.folderMaker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top, tree_depth, item.row())
+
+                    self.treeWidget_images.setColumnWidth(0, self.treeWidget_images.indentation()*(tree_depth+1)+widget_width)
+                    self.treeWidget_images.setStyleSheet("QTreeWidget { font-size: 12px; }")
+                except FileNotFoundError as e:
+                    QMessageBox.about(self, "알림", "해당 모델의 파일이 존재하지 않습니다. 확인하세요.")
+            else:
                 QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
-                conn.close()
-                sys.exit()
-
-            cur_tree_widget.setColumnWidth(0, cur_tree_widget.indentation()*(tree_depth+1)+widget_width)
-            cur_tree_widget.setStyleSheet("QTreeWidget { font-size: 12px; }")
 
     def closeEvent(self, event):
         for window in QApplication.topLevelWidgets():
@@ -601,11 +619,13 @@ class MainWindow(QMainWindow, form_class):
 
 
 list_add_button = """
+    font-size: 11px;
     font-weight: bold;
     color:  rgb(255, 0, 110);
     background-color: white;
     border: 1px solid rgb(255, 0, 110);
     border-radius: 5px;
+    padding-top: 1px;
 """
 
 
