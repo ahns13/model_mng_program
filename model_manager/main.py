@@ -1,5 +1,7 @@
 import math
 import os
+import time
+import gc
 import win32com.client
 from PyQt5.QtWidgets import *
 
@@ -8,6 +10,7 @@ from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy, ModelWindow, t
 from login import LoginWindow
 from model_functions import *
 from program_info import image_root
+from pptCreater import modelPptMaker
 import model_images_rc
 
 import logging
@@ -27,24 +30,19 @@ def treeWidgetWidth(v_value):
     widget_width = widget_width if widget_width > v_value else v_value
 
 
-class AlignDelegate(QtWidgets.QStyledItemDelegate):
-    def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
-
-        if index.column() in [3,4,6]:
-            option.displayAlignment = QtCore.Qt.AlignCenter
-
-
 class IconDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(IconDelegate, self).initStyleOption(option, index)
-        option.decorationSize = option.rect.size()
+        option.decorationSize = option.rect.size()  # icon size adjust
 
 
 class TableDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(TableDelegate, self).initStyleOption(option, index)
         option.font.setPixelSize(12)
+
+        if index.column() in [3, 4, 6]:  # 테이블 칼럼 정렬 - center
+            option.displayAlignment = QtCore.Qt.AlignCenter
 
 
 class TreeWidget(QWidget):
@@ -91,7 +89,7 @@ class MainWindow(QMainWindow, form_class):
         }
         self.dataKeyIndex = 9
         self.dataNameIndex = 0
-        self.dataNameIndex = 0
+        self.fileNameIndex = 5
         self.filePathIndexOfData = 10
         self.imageFolderIndex = [7, 9]  # index pair : data, tableColumn
 
@@ -122,9 +120,6 @@ class MainWindow(QMainWindow, form_class):
 
         self.select_model_data = []
         self.select_model_images = {}
-
-        align_delegate = AlignDelegate(self.tableWidget)
-        self.tableWidget.setItemDelegate(align_delegate)
 
         icon_delegate = IconDelegate(self.tableWidget)
         self.tableWidget.setItemDelegateForColumn(0, icon_delegate)
@@ -210,9 +205,31 @@ class MainWindow(QMainWindow, form_class):
         self.comboBoxRangeConnect()
 
         # treeWidget
-        self.treeWidget_images.setHeaderLabels([""])
+        self.treeWidget_images.setHeaderLabels(["이미지 폴더 목록"])
+        self.treeWidget_images.setStyleSheet("""
+            QTreeWidget { font-size: 12px; }
+            QHeaderView::section {
+                background-color: #eee;
+            }
+            QTreeWidget::Item {
+                border: 1px solid #c1c1c1;
+                color: #3d3e40;
+            }
+        """)
 
         # self.loginCheck()
+
+        # treewidget progress bar
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setGeometry(1250, 440, 150, 25)
+        self.progress_rate = 0
+        self.directory_size = 0  # 클릭한 모델의 이미지 폴더의 item 수
+        self.progress_bar.hide()
+
+        self.textEdit_loading.hide()
+
+        # 컴카드 생성
+        self.btn_ppt_maker.clicked.connect(self.modelPptMaker)
 
         self.show()
 
@@ -524,6 +541,7 @@ class MainWindow(QMainWindow, form_class):
         return cellWidget
 
     def tableSelectListAdd(self, v_args):
+        # image table에 선택 모델 추가
         row_index = self.tableWidget_select_list.rowCount()
         self.tableWidget_select_list.insertRow(row_index)
         self.tableWidget_select_list.setCellWidget(row_index, 0, tableCheckBox())
@@ -549,16 +567,28 @@ class MainWindow(QMainWindow, form_class):
         v_tree_depth += 1
         folder_list = os.scandir(v_file_path)
 
-        # recursive 함수 적용 시 connect 함수에 파라미터로 timer instance도 넘겨야 한다. timer instance를 self에 선언하면 안된다.
+        # recursive 함수 적용 시 connect 함수에 파라미터로 timer instance도 넘겨야 한다.
         _timer = QtCore.QTimer()
         _timer.timeout.connect(lambda: self.imageMaker(folder_list, v_parent_tree, v_tree_depth, v_item_row, _timer))
         _timer.start(10)
 
     def imageMaker(self, v_folder_list, v_parent_tree, v_tree_depth, v_item_row, v_timer):
         try:
+            self.progress_rate += 1
+            self.progress_bar.setValue(math.floor(self.progress_rate/self.directory_size*100))
+            time.sleep(0.25)
             f = next(v_folder_list)
         except StopIteration:
             v_timer.stop()
+            v_timer.deleteLater()
+            timer_cnt = 0
+            for obj in gc.get_objects():
+                if isinstance(obj, QtCore.QTimer):
+                    timer_cnt += 1
+            if timer_cnt == 1:
+                self.progress_bar.setValue(0)
+                self.progress_bar.setVisible(False)
+                self.textEdit_loading.setVisible(False)
         else:
             if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
                 item_f = QTreeWidgetItem(v_parent_tree)
@@ -577,7 +607,6 @@ class MainWindow(QMainWindow, form_class):
 
         if item.column() == 1:
             if os.path.exists("Z:\\Chicmodle agency\\"):
-                # loading_obj = self.loadingDisplay()
                 global widget_width
                 widget_width = 0
                 tree_depth = 1
@@ -586,36 +615,49 @@ class MainWindow(QMainWindow, form_class):
                 self.treeWidget_images.setColumnCount(1)
                 item_top = QTreeWidgetItem(self.treeWidget_images, [item.data()])
                 try:
-                    self.folderMaker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top, tree_depth, item.row())
-
-                    self.treeWidget_images.setColumnWidth(0, self.treeWidget_images.indentation()*(tree_depth+1)+widget_width)
-                    self.treeWidget_images.setStyleSheet("QTreeWidget { font-size: 12px; }")
-                except FileNotFoundError as e:
+                    self.getDirectorySize(self.select_model_data[item.row()][self.imageFolderIndex[0]])
+                    if self.directory_size:
+                        self.textEdit_loading.setVisible(True)
+                        self.progress_bar.setVisible(True)
+                        time.sleep(0.3)
+                        self.folderMaker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top,
+                                         tree_depth, item.row())
+                        self.treeWidget_images.setColumnWidth(0, self.treeWidget_images.indentation() *
+                                                              (tree_depth + 1) + widget_width)
+                    else:
+                        QMessageBox.about(self, "알림", "폴더에 아무것도 존재하지 않습니다.")
+                        self.textEdit_loading.setVisible(False)
+                        self.progress_bar.setVisible(False)
+                except FileNotFoundError:
                     QMessageBox.about(self, "알림", "해당 모델의 파일이 존재하지 않습니다. 확인하세요.")
-            else:
-                QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
+                    QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
+
+    def getDirectorySize(self, v_file_path):
+        folder_list = os.scandir(v_file_path)
+        for f in folder_list:
+            self.directory_size += 1
+            if f.is_dir():
+                self.getDirectorySize(f.path)
+
+    def modelPptMaker(self):
+        model_checked_list = getCheckListFromTable(self.tableWidget_select_list, QCheckBox)
+        if model_checked_list:
+            model_keys, model_names, file_names, file_paths = [], [], [], []
+            for idx in model_checked_list:
+                selected_model_info = self.select_model_data[idx]
+                model_keys.append(selected_model_info[self.dataKeyIndex])
+                model_names.append(selected_model_info[self.dataNameIndex])
+                file_names.append(selected_model_info[self.fileNameIndex])
+                file_paths.append(selected_model_info[self.imageFolderIndex[0]])
+            modelPptMaker(name=model_names, file_name=file_names, file_path=file_paths)
+        else:
+            QMessageBox.about(self, "알림", "컴카드를 만들 모델을 하나 이상 선택하세요.")
 
     def closeEvent(self, event):
+        # 메인 윈도우 종료 시 모든 윈도우 종료
         for window in QApplication.topLevelWidgets():
             window.close()
         conn.close()
-
-    def loadingDisplay(self):
-        try:
-            widget = QWidget()
-            loading = QLabel()
-            layout = QHBoxLayout()
-            layout.addWidget(loading)
-            layout.setAlignment(QtCore.Qt.AlignCenter)
-            movie = QtGui.QMovie(r"D:\파일\python\model\model_manager\image\loading.gif")
-            movie.setScaledSize(QtCore.QSize().scaled(300, 300, QtCore.Qt.KeepAspectRatio))
-            loading.setMovie(movie)
-            widget.setLayout(layout)
-            self.setCentralWidget(widget)
-            movie.start()
-            return widget
-        except Exception as e:
-            print(e)
 
 
 list_add_button = """

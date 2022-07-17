@@ -107,6 +107,12 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QPushButton" name="btn_prev">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>28</height>
+        </size>
+       </property>
        <property name="maximumSize">
         <size>
          <width>60</width>
@@ -144,6 +150,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="btn_next">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>28</height>
+        </size>
+       </property>
        <property name="maximumSize">
         <size>
          <width>60</width>
@@ -568,7 +580,7 @@
     <property name="geometry">
      <rect>
       <x>1284</x>
-      <y>179</y>
+      <y>176</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -601,10 +613,73 @@
     <attribute name="headerCascadingSectionResizes">
      <bool>false</bool>
     </attribute>
+    <attribute name="headerHighlightSections">
+     <bool>true</bool>
+    </attribute>
     <attribute name="headerStretchLastSection">
      <bool>true</bool>
     </attribute>
+    <column>
+     <property name="text">
+      <string notr="true">1</string>
+     </property>
+    </column>
    </widget>
+   <widget class="QTextEdit" name="textEdit_loading">
+    <property name="geometry">
+     <rect>
+      <x>1190</x>
+      <y>210</y>
+      <width>231</width>
+      <height>461</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_ppt_maker">
+    <property name="geometry">
+     <rect>
+      <x>1440</x>
+      <y>210</y>
+      <width>121</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-weight: bold;
+color: rgb(65, 65, 65);
+background-color: white;
+border: 2px solid rgb(65, 65, 65);
+border-radius: 5px;</string>
+    </property>
+    <property name="text">
+     <string>컴카드(ppt) 생성</string>
+    </property>
+   </widget>
+   <zorder>treeWidget_images</zorder>
+   <zorder>textEdit_loading</zorder>
+   <zorder>tableWidget</zorder>
+   <zorder>label</zorder>
+   <zorder>layoutWidget</zorder>
+   <zorder>groupBox_profile</zorder>
+   <zorder>groupBox_career</zorder>
+   <zorder>label_2</zorder>
+   <zorder>groupBox_contact</zorder>
+   <zorder>label_3</zorder>
+   <zorder>groupBox_contract</zorder>
+   <zorder>label_4</zorder>
+   <zorder>btn_search</zorder>
+   <zorder>gbox_input_item</zorder>
+   <zorder>btn_items_clear</zorder>
+   <zorder>groupBox_other</zorder>
+   <zorder>label_5</zorder>
+   <zorder>btn_new</zorder>
+   <zorder>tableWidget_select_list</zorder>
+   <zorder>line</zorder>
+   <zorder>label_6</zorder>
+   <zorder>btn_ppt_maker</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -613,7 +688,7 @@
      <x>0</x>
      <y>0</y>
      <width>1631</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
