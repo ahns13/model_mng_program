@@ -16,7 +16,7 @@ def modelPptMaker(**kargs):
     :return:
     """
     shape_id = {
-        "profile": 13, "career": 10, "contact": 9,
+        "profile": 13, "career": 9, "contact": 10,
         "big image left": 3, "big image right": 2,
         "small image 1": 4, "small image 2": 5, "small image 3": 6, "small image 4": 7
     }
@@ -40,21 +40,26 @@ def modelPptMaker(**kargs):
             if shp.shape_id == shape_id["profile"]:
                 tf = shp.text_frame
                 pg = tf.paragraphs[0]  # name
-                addRun(pg, model_profile_data["name"] + (" "+model_profile_data["name_info"] if model_profile_data["name_info"] else ""))
+                addRun(pg, " ".join(model_profile_data["name"]) + (" "+model_profile_data["name_info"] if model_profile_data["name_info"] else ""))
                 if model_profile_data["birth_date"]:
                     pg = tf.add_paragraph()  # birth
+                    pg.text = ""
                     addRun(pg, "생년월일 : " + model_profile_data["birth_date"])
                 if model_profile_data["height"]:
                     pg = tf.add_paragraph()  # height
+                    pg.text = ""
                     addRun(pg, "신장 : " + model_profile_data["height"])
                 if model_profile_data["weight"]:
                     pg = tf.add_paragraph()  # weight
+                    pg.text = ""
                     addRun(pg, "체중 : " + model_profile_data["weight"])
                 if model_profile_data["sizes"]:
                     pg = tf.add_paragraph()  # sizes
+                    pg.text = ""
                     addRun(pg, model_profile_data["sizes"])
                 if model_profile_data["hobbynspec"]:
                     pg = tf.add_paragraph()  # hobbynspec
+                    pg.text = ""
                     addRun(pg, model_profile_data["hobbynspec"])
     prs.save("./ppt/new_model.pptx")
 

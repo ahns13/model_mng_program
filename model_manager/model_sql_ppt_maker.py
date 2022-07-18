@@ -46,6 +46,15 @@ def ppt_get_profile(v_key):
         conn.close()
         sys.exit()
 
+"""
+SELECT A.CAREER_TYPE, 
+  FROM CAREER A
+       LEFT OUTER JOIN COMBO_MAP_LIST B
+         ON A.CAREER_TYPE = B.COL_NAME
+        AND B.COMBO_TYPE = 'CAREER'
+        AND B.COMBO_DETAIL_TYPE = 'DATA'
+ WHERE KEY = 60
+ ORDER BY B.SORT_ORDER"""
 
 if __name__ == "__main__":
     pass
