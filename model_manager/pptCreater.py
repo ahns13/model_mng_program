@@ -1,8 +1,10 @@
 from pptx import Presentation
-from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Pt
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_PARAGRAPH_ALIGNMENT
 import copy
 from model_sql_ppt_maker import *
+from datetime import datetime
 
 
 def modelPptMaker(**kargs):
@@ -16,7 +18,7 @@ def modelPptMaker(**kargs):
     :return:
     """
     shape_id = {
-        "profile": 13, "career": 9, "contact": 10,
+        "profile": 13, "career": 9, "contract": 10,
         "big image left": 3, "big image right": 2,
         "small image 1": 4, "small image 2": 5, "small image 3": 6, "small image 4": 7
     }
@@ -35,9 +37,13 @@ def modelPptMaker(**kargs):
 
     for i in range(model_size):
         model_profile_data = ppt_get_profile(kargs["model_keys"][i])
+        model_career_data = ppt_get_career(kargs["model_keys"][i])
+        model_contract_data = ppt_get_contract(kargs["model_keys"][i])
         print(model_profile_data)
+        print(model_career_data)
+        print(model_contract_data)
         for shp in prs.slides[i].shapes:
-            if shp.shape_id == shape_id["profile"]:
+            if shp.shape_id == shape_id["profile"]:  # 모델 프로필 삽입
                 tf = shp.text_frame
                 pg = tf.paragraphs[0]  # name
                 addRun(pg, " ".join(model_profile_data["name"]) + (" "+model_profile_data["name_info"] if model_profile_data["name_info"] else ""))
@@ -61,13 +67,40 @@ def modelPptMaker(**kargs):
                     pg = tf.add_paragraph()  # hobbynspec
                     pg.text = ""
                     addRun(pg, model_profile_data["hobbynspec"])
-    prs.save("./ppt/new_model.pptx")
+
+            if shp.shape_id == shape_id["career"]:  # 모델 경력 삽입
+                tf = shp.text_frame
+                for idx, data in enumerate(model_career_data):
+                    pg = tf.add_paragraph()  # career_type
+                    pg.text = ""
+                    addRun(pg, "- "+data[0])
+                    pg = tf.add_paragraph()  # careers
+                    pg.text = ""
+                    addRun(pg, data[1])
+                    if idx < len(model_career_data):
+                        pg = tf.add_paragraph()  # blank line
+                        pg.text = ""
+
+            if shp.shape_id == shape_id["contract"]:  # 모델 경력 삽입
+                tf = shp.text_frame
+                for idx, data in enumerate(model_contract_data):
+                    pg = tf.add_paragraph()  # career_type
+                    pg.text = ""
+                    pg.alignment = PP_PARAGRAPH_ALIGNMENT.CENTER
+                    addRun(pg, data[2] + (" "+data[3] if data[3] else ""), "contract")
+    cur_time = datetime.now().strftime("%Y%m%d")
+    prs.save("./models_"+cur_time+".pptx" if model_size > 1 else "./"+kargs["model_names"][0]+".pptx")
 
 
-def addRun(v_paragraph, v_run_text):
+def addRun(v_paragraph, v_run_text, v_type=None):
     run = v_paragraph.add_run()
     run.text = v_run_text
-    run.font.size = Pt(10)
+    run.font.name = "맑은 고딕"
+    if v_type == "contract":
+        run.font.size = Pt(11)
+        run.font.color.rgb = RGBColor(192, 0, 0)
+    else:
+        run.font.size = Pt(10)
 
 
 if __name__ == "__main__":

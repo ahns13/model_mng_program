@@ -4,6 +4,8 @@ import time
 import gc
 import win32com.client
 from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QDragEnterEvent
+from PyQt5.QtGui import QDropEvent
 
 from model_sql_ui import conn, get_model_list, get_comboBox_list_a, get_comboBox_list_career, saveImagePath
 from window_info import QtWidgets, uic, QtCore, QtGui, sys, copy, ModelWindow, tableCheckBox
@@ -46,7 +48,7 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class TreeWidget(QWidget):
-    def __init__(self, txt='', image_path='', font_size=11, select_image_list=None):
+    def __init__(self, txt='', image_path='', font_size=11, tree_path=None, select_image_list=None):
         super().__init__()
 
         tree_item_font = QtGui.QFont()
@@ -58,9 +60,9 @@ class TreeWidget(QWidget):
 
         if image_path:
             image = QtGui.QImage(r"{}".format(image_path))
+            select_image_list[tree_path] = image
             image = QtGui.QPixmap.fromImage(image).scaledToWidth(160)
             # image = QtGui.QPixmap(r"{}".format(image_path))
-            select_image_list[txt] = image
             image_label.setPixmap(image)
         layout.addWidget(image_label)
 
@@ -71,6 +73,39 @@ class TreeWidget(QWidget):
 
         self.setLayout(layout)
         treeWidgetWidth(self.sizeHint().width())
+
+
+class DropLabel(QLabel):
+    def __init__(self, parent, groupBox):
+        super(DropLabel, self).__init__(groupBox)
+        self.parent = parent
+        self.setAcceptDrops(True)
+        self.setStyleSheet("border: 1px solid rgb(166, 166, 166)")
+
+    def dragEnterEvent(self, e):
+        if type(e.source()) == QTreeWidget:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        drag_item = e.source().selectedItems()[0]
+        if drag_item.text(0):
+            path = drag_item.text(0)
+        else:  # image item
+            item_widget = e.source().itemWidget(drag_item, 0)
+            path = item_widget.findChildren(QLabel)[1].text()
+        while drag_item.parent():
+            drag_item = drag_item.parent()
+            path = drag_item.text(0)+"/"+path
+
+        try:
+            target_size = self.size()
+            image = QtGui.QPixmap.fromImage(self.parent.select_model_images[self.parent.select_model_index][path]) \
+                .scaled(target_size, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.setPixmap(image)
+        except Exception as e:
+            print(e)
 
 
 class MainWindow(QMainWindow, form_class):
@@ -120,7 +155,9 @@ class MainWindow(QMainWindow, form_class):
 
         self.select_model_data = []
         self.select_model_images = {}
+        self.select_model_image_locations = {}
 
+        # ------------ #
         icon_delegate = IconDelegate(self.tableWidget)
         self.tableWidget.setItemDelegateForColumn(0, icon_delegate)
 
@@ -205,6 +242,8 @@ class MainWindow(QMainWindow, form_class):
         self.comboBoxRangeConnect()
 
         # treeWidget
+        self.treeWidget_images.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)  # treeWidget_images 드래그 설정
+        self.treeWidget_images.setDragEnabled(True)
         self.treeWidget_images.setHeaderLabels(["이미지 폴더 목록"])
         self.treeWidget_images.setStyleSheet("""
             QTreeWidget { font-size: 12px; }
@@ -230,6 +269,21 @@ class MainWindow(QMainWindow, form_class):
 
         # 컴카드 생성
         self.btn_ppt_maker.clicked.connect(self.modelPptMaker)
+
+        self.label_m1 = DropLabel(self, self.groupBox_ppt1)
+        self.label_m1.setGeometry(20, 15, 91, 81)
+        self.label_m2 = DropLabel(self, self.groupBox_ppt1)
+        self.label_m2.setGeometry(120, 15, 91, 81)
+        self.label_s1 = DropLabel(self, self.groupBox_ppt1)
+        self.label_s1.setGeometry(20, 105, 41, 61)
+        self.label_s2 = DropLabel(self, self.groupBox_ppt1)
+        self.label_s2.setGeometry(70, 105, 41, 61)
+        self.label_s3 = DropLabel(self, self.groupBox_ppt1)
+        self.label_s3.setGeometry(120, 105, 41, 61)
+        self.label_s4 = DropLabel(self, self.groupBox_ppt1)
+        self.label_s4.setGeometry(170, 105, 41, 61)
+
+        self.btn_ppt_loc_save.clicked.connect()
 
         self.show()
 
@@ -563,16 +617,16 @@ class MainWindow(QMainWindow, form_class):
         login_window = LoginWindow()
         login_window.exec_()
 
-    def folderMaker(self, v_file_path, v_parent_tree, v_tree_depth, v_item_row):
+    def folderMaker(self, v_file_path, v_parent_tree, v_tree_depth, v_item_row, v_tree_path):
         v_tree_depth += 1
         folder_list = os.scandir(v_file_path)
 
         # recursive 함수 적용 시 connect 함수에 파라미터로 timer instance도 넘겨야 한다.
         _timer = QtCore.QTimer()
-        _timer.timeout.connect(lambda: self.imageMaker(folder_list, v_parent_tree, v_tree_depth, v_item_row, _timer))
+        _timer.timeout.connect(lambda: self.imageMaker(folder_list, v_parent_tree, v_tree_depth, v_item_row, _timer, v_tree_path))
         _timer.start(10)
 
-    def imageMaker(self, v_folder_list, v_parent_tree, v_tree_depth, v_item_row, v_timer):
+    def imageMaker(self, v_folder_list, v_parent_tree, v_tree_depth, v_item_row, v_timer, v_tree_path):
         try:
             self.progress_rate += 1
             self.progress_bar.setValue(math.floor(self.progress_rate/self.directory_size*100))
@@ -592,18 +646,26 @@ class MainWindow(QMainWindow, form_class):
         else:
             if f.is_file() and f.name.split(".")[1].lower() in ["jpg", "jpeg", "png", "gif"]:
                 item_f = QTreeWidgetItem(v_parent_tree)
-                image_f = TreeWidget(f.name, f.path, select_image_list=self.select_model_images[v_item_row])
+                image_f = TreeWidget(f.name, f.path, tree_path=v_tree_path+"/"+f.name, select_image_list=self.select_model_images[v_item_row])
                 self.treeWidget_images.setItemWidget(item_f, 0, image_f)
             elif f.is_dir():
                 item_f = QTreeWidgetItem(v_parent_tree)
                 item_f.setText(0, f.name)
-                self.folderMaker(f.path, item_f, v_tree_depth, v_item_row)
+                self.folderMaker(f.path, item_f, v_tree_depth, v_item_row, v_tree_path+"/"+f.name)
             else:
                 item_f = QTreeWidgetItem(v_parent_tree)
                 item_f.setText(0, f.name)
 
     def addImagesForClickedModel(self, item):
+        if self.select_model_data[item.row()][self.imageFolderIndex[0]]:
+            pass
+        else:
+            QMessageBox.critical(self, "알림", "이미지 경로가 매핑되지 않았습니다. 모델의 이미지가 존재하는 폴더를 설정하세요.")
+            return
+
         self.select_model_images[item.row()] = {}
+        self.select_model_index = item.row()
+        self.select_model_image_locations[item.row()] = {"m1": None, "m2": None, "s1": None, "s2": None, "s3": None, "s4": None}
 
         if item.column() == 1:
             if os.path.exists("Z:\\Chicmodle agency\\"):
@@ -621,7 +683,7 @@ class MainWindow(QMainWindow, form_class):
                         self.progress_bar.setVisible(True)
                         time.sleep(0.3)
                         self.folderMaker(self.select_model_data[item.row()][self.imageFolderIndex[0]], item_top,
-                                         tree_depth, item.row())
+                                         tree_depth, item.row(), item.data())
                         self.treeWidget_images.setColumnWidth(0, self.treeWidget_images.indentation() *
                                                               (tree_depth + 1) + widget_width)
                     else:
@@ -630,7 +692,8 @@ class MainWindow(QMainWindow, form_class):
                         self.progress_bar.setVisible(False)
                 except FileNotFoundError:
                     QMessageBox.about(self, "알림", "해당 모델의 파일이 존재하지 않습니다. 확인하세요.")
-                    QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
+            else:
+                QMessageBox.critical(self, "오류", "모델 DB가 Z드라이브에 연결되어 있는지 학인하세요.")
 
     def getDirectorySize(self, v_file_path):
         folder_list = os.scandir(v_file_path)
@@ -653,6 +716,9 @@ class MainWindow(QMainWindow, form_class):
         else:
             QMessageBox.about(self, "알림", "컴카드를 만들 모델을 하나 이상 선택하세요.")
 
+    def save_ppt_image_location(self):
+        self.select_model_image_locations
+
     def closeEvent(self, event):
         # 메인 윈도우 종료 시 모든 윈도우 종료
         for window in QApplication.topLevelWidgets():
@@ -672,6 +738,7 @@ list_add_button = """
 
 
 if __name__ == "__main__":
+    # jpg, jpeg를 인식하지 못할 때 plugins 위치를 추가하면 인식됨
     QtCore.QCoreApplication.addLibraryPath(r"..\model_env\Lib\site-packages\PyQt5\Qt5\plugins")
     app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
