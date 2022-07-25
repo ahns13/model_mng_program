@@ -3,7 +3,7 @@ import importlib
 
 cx_Oracle = importlib.import_module("cx_Oracle")
 username = "ADMIN"
-password = "AhnCsh181223"
+password = "xxxx"
 conn = cx_Oracle.connect(user=username, password=password, dsn="modeldb_medium")
 cursor = conn.cursor()
 
